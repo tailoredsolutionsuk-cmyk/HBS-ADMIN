@@ -31,7 +31,8 @@ function toneFor(index: number) {
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { claims } } = await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
   if (!claims?.sub) return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
 
