@@ -27,6 +27,7 @@ function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
 type DashboardStats = { activeWebsites: number | string; deployments: number | string; teamMembers: number | string; uptime: string; pageViews30d?: number };
+type AnalyticsData = { totals: { views: number; visitors: number }; daily: { date: string; value: number }[]; pages: { label: string; value: number }[]; referrers: { label: string; value: number }[]; devices: { label: string; value: number }[]; browsers: { label: string; value: number }[] };
 
 const fallbackWebsites: Website[] = [
   { name: "HBS Marketing", domain: "hbsmarketing.co.uk", type: "Marketing site", status: "Live", color: "peach", updated: "12 min ago", deployment: "Production" },
@@ -49,9 +50,31 @@ const navItems: { label: string; icon: IconName }[] = [
   { label: "Websites", icon: "globe" },
   { label: "Clients", icon: "users" },
   { label: "Deployments", icon: "layers" },
+  { label: "Analytics", icon: "activity" },
   { label: "Activity", icon: "activity" },
   { label: "Integrations", icon: "link" },
 ];
+
+function AnalyticsPanel({ data, loading }: { data: AnalyticsData | null; loading: boolean }) {
+  const maxDaily = Math.max(...(data?.daily.map((item) => item.value) ?? [1]), 1);
+  const maxPage = Math.max(...(data?.pages.map((item) => item.value) ?? [1]), 1);
+  return <div className="admin-analytics-view">
+    <section className="admin-welcome"><div><span className="admin-kicker">www.hbsmarketing.co.uk</span><h2>Website analytics</h2><p>Anonymous traffic collected from the HBS Marketing frontend.</p></div><span className="admin-analytics-live"><i />Last 30 days</span></section>
+    {loading ? <section className="admin-panel admin-analytics-loading">Loading marketing analytics…</section> : data && <>
+      <section className="admin-stats" aria-label="Marketing analytics statistics">
+        <article className="admin-stat-card"><span className="admin-stat-icon peach"><Icon name="activity" size={17} /></span><span className="admin-stat-label">Page views</span><strong>{data.totals.views}</strong><small>Last <b>30 days</b></small></article>
+        <article className="admin-stat-card"><span className="admin-stat-icon blue"><Icon name="users" size={17} /></span><span className="admin-stat-label">Unique visitors</span><strong>{data.totals.visitors}</strong><small>Privacy-safe <b>daily IDs</b></small></article>
+        <article className="admin-stat-card"><span className="admin-stat-icon lavender"><Icon name="globe" size={17} /></span><span className="admin-stat-label">Tracked pages</span><strong>{data.pages.length}</strong><small>Top pages <b>shown below</b></small></article>
+        <article className="admin-stat-card"><span className="admin-stat-icon mint"><Icon name="arrow-up-right" size={17} /></span><span className="admin-stat-label">Top page</span><strong className="admin-stat-text-value">{data.pages[0]?.label ?? "—"}</strong><small>{data.pages[0]?.value ?? 0} views</small></article>
+      </section>
+      <div className="admin-grid">
+        <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Traffic</span><h3>Daily page views</h3></div></div><div className="admin-bar-chart">{data.daily.map((item) => <span key={item.date} title={`${item.date}: ${item.value}`} style={{ height: `${Math.max(4, (item.value / maxDaily) * 100)}%` }} />)}</div><div className="admin-chart-labels"><span>{data.daily[0]?.date}</span><span>{data.daily[data.daily.length - 1]?.date}</span></div></section>
+        <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Content</span><h3>Popular pages</h3></div></div><div className="admin-ranking-list">{data.pages.map((item) => <div className="admin-ranking-row" key={item.label}><span title={item.label}>{item.label}</span><b>{item.value}</b><i><em style={{ width: `${(item.value / maxPage) * 100}%` }} /></i></div>)}</div></section>
+      </div>
+      <div className="admin-grid lower"><section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Acquisition</span><h3>Referrers</h3></div></div><div className="admin-mini-list">{data.referrers.map((item) => <div key={item.label}><span>{item.label}</span><b>{item.value}</b></div>)}</div></section><section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Audience</span><h3>Devices & browsers</h3></div></div><div className="admin-mini-list">{[...data.devices, ...data.browsers].map((item, index) => <div key={`${item.label}-${index}`}><span>{item.label}</span><b>{item.value}</b></div>)}</div></section></div>
+    </>}
+  </div>;
+}
 
 export default function AdminPage() {
   const [activeNav, setActiveNav] = useState("Overview");
@@ -62,6 +85,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState<DashboardStats>(fallbackStats);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const filteredWebsites = useMemo(() => websiteData.filter((site) => `${site.name} ${site.domain} ${site.type}`.toLowerCase().includes(query.toLowerCase())), [query, websiteData]);
 
   useEffect(() => {
@@ -82,6 +107,14 @@ export default function AdminPage() {
       });
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    if (activeNav !== "Analytics" || analytics || analyticsLoading) return;
+    setAnalyticsLoading(true);
+    fetch("/api/admin/analytics").then(async (response) => {
+      if (response.ok) setAnalytics(await response.json());
+    }).catch(() => undefined).finally(() => setAnalyticsLoading(false));
+  }, [activeNav, analytics, analyticsLoading]);
 
   function showNotice(message: string) {
     setNotice(message);
@@ -130,7 +163,7 @@ export default function AdminPage() {
               <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Latest changes</span><h3>Recent activity</h3></div><button className="admin-text-button" onClick={() => setActiveNav("Activity")}>View activity <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-activity-list">{activityData.map((activity) => <div className="admin-activity-row" key={`${activity.title}-${activity.time}`}><span className={`admin-activity-dot ${activity.tone}`} /><span><strong>{activity.title}</strong><small>{activity.detail}</small></span><time>{activity.time}</time></div>)}</div></section>
               <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => showNotice("Deployment center opened")}><span><Icon name="layers" size={16} /></span><strong>Review deployments</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Team management opened")}><span><Icon name="users" size={16} /></span><strong>Manage team access</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Integration settings opened")}><span><Icon name="link" size={16} /></span><strong>Configure integrations</strong><Icon name="arrow-up-right" size={13} /></button></div></section>
             </div>
-          </> : <section className="admin-panel admin-placeholder"><span className="admin-stat-icon blue"><Icon name={navItems.find((item) => item.label === activeNav)?.icon ?? "grid"} size={20} /></span><span className="admin-section-kicker">Admin module</span><h2>{activeNav}</h2><p>This workspace module is ready to connect to Supabase data and live provider actions.</p><button className="admin-primary-button" onClick={() => showNotice(`${activeNav} module queued for build`)}><Icon name="plus" size={15} />Start building</button></section>}
+          </> : activeNav === "Analytics" ? <AnalyticsPanel data={analytics} loading={analyticsLoading} /> : <section className="admin-panel admin-placeholder"><span className="admin-stat-icon blue"><Icon name={navItems.find((item) => item.label === activeNav)?.icon ?? "grid"} size={20} /></span><span className="admin-section-kicker">Admin module</span><h2>{activeNav}</h2><p>This workspace module is ready to connect to Supabase data and live provider actions.</p><button className="admin-primary-button" onClick={() => showNotice(`${activeNav} module queued for build`)}><Icon name="plus" size={15} />Start building</button></section>}
         </div>
       </section>
       {notice && <div className="admin-toast"><span>✓</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div>}
