@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+const ANALYTICS_START = new Date("2026-08-03T00:00:00+01:00");
 
 type ViewRow = {
   path: string | null;
@@ -30,7 +31,7 @@ export async function GET() {
   const claims = data?.claims;
   if (!claims?.sub) return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
 
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const since = ANALYTICS_START.toISOString();
   const [adminResult, countResult, viewsResult] = await Promise.all([
     supabase.from("admin_users").select("email, role").eq("user_id", claims.sub).maybeSingle(),
     supabase.from("page_views").select("id", { count: "exact", head: true }).or("client_id.is.null,client_id.eq.hbsmarketing").gte("timestamp", since),
@@ -41,14 +42,15 @@ export async function GET() {
   if (countResult.error || viewsResult.error) return NextResponse.json({ error: "SUPABASE_QUERY_FAILED" }, { status: 500 });
 
   const rows = (viewsResult.data ?? []) as ViewRow[];
-  const daily = Array.from({ length: 30 }, (_, index) => {
-    const date = new Date(Date.now() - (29 - index) * 24 * 60 * 60 * 1000);
+  const dayCount = Math.max(1, Math.floor((Date.now() - ANALYTICS_START.getTime()) / (24 * 60 * 60 * 1000)) + 1);
+  const daily = Array.from({ length: dayCount }, (_, index) => {
+    const date = new Date(ANALYTICS_START.getTime() + index * 24 * 60 * 60 * 1000);
     const key = date.toISOString().slice(0, 10);
     return { date: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: rows.filter((row) => row.timestamp.slice(0, 10) === key).length };
   });
 
   return NextResponse.json({
-    range: "30d",
+    range: "since-2026-08-03",
     totals: { views: countResult.count ?? 0, visitors: new Set(rows.map((row) => row.visitor_hash).filter(Boolean)).size },
     daily,
     pages: topValues(rows, "path", 8),
