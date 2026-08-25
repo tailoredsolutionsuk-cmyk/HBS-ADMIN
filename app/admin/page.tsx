@@ -59,10 +59,10 @@ function AnalyticsPanel({ data, loading }: { data: AnalyticsData | null; loading
   const maxDaily = Math.max(...(data?.daily.map((item) => item.value) ?? [1]), 1);
   const maxPage = Math.max(...(data?.pages.map((item) => item.value) ?? [1]), 1);
   return <div className="admin-analytics-view">
-    <section className="admin-welcome"><div><span className="admin-kicker">www.hbsmarketing.co.uk</span><h2>Website analytics</h2><p>Anonymous traffic collected from the HBS Marketing frontend.</p></div><span className="admin-analytics-live"><i />Since 3 Aug 2026</span></section>
+    <section className="admin-welcome"><div><span className="admin-kicker">www.hbsmarketing.co.uk</span><h2>Website analytics</h2><p>Anonymous traffic collected from the HBS Marketing frontend.</p></div><span className="admin-analytics-live"><i />Last 30 days</span></section>
     {loading ? <section className="admin-panel admin-analytics-loading">Loading marketing analytics…</section> : data && <>
       <section className="admin-stats" aria-label="Marketing analytics statistics">
-        <article className="admin-stat-card"><span className="admin-stat-icon peach"><Icon name="activity" size={17} /></span><span className="admin-stat-label">Page views</span><strong>{data.totals.views}</strong><small>Since <b>3 Aug 2026</b></small></article>
+        <article className="admin-stat-card"><span className="admin-stat-icon peach"><Icon name="activity" size={17} /></span><span className="admin-stat-label">Page views</span><strong>{data.totals.views}</strong><small>Last <b>30 days</b></small></article>
         <article className="admin-stat-card"><span className="admin-stat-icon blue"><Icon name="users" size={17} /></span><span className="admin-stat-label">Unique visitors</span><strong>{data.totals.visitors}</strong><small>Privacy-safe <b>daily IDs</b></small></article>
         <article className="admin-stat-card"><span className="admin-stat-icon lavender"><Icon name="globe" size={17} /></span><span className="admin-stat-label">Tracked pages</span><strong>{data.pages.length}</strong><small>Top pages <b>shown below</b></small></article>
         <article className="admin-stat-card"><span className="admin-stat-icon mint"><Icon name="arrow-up-right" size={17} /></span><span className="admin-stat-label">Top page</span><strong className="admin-stat-text-value">{data.pages[0]?.label ?? "—"}</strong><small>{data.pages[0]?.value ?? 0} views</small></article>
