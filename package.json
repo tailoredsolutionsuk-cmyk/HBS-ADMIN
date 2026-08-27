@@ -10,10 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/react": "latest",
+    "@ai-sdk/react": "4.0.71",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.112.3",
-    "ai": "latest",
+    "ai": "7.0.68",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest"
