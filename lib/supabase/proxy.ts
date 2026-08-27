@@ -20,14 +20,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
+  await supabase.auth.getClaims();
 
-  if (!claims && request.nextUrl.pathname.startsWith("/admin")) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+  if (request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname === "/login") {
+    const rootUrl = request.nextUrl.clone();
+    rootUrl.pathname = "/";
+    rootUrl.search = "";
+    return NextResponse.redirect(rootUrl);
   }
 
   return response;
