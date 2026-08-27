@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CrmPanel from "./crm-panel";
+import AiPanel from "./ai-panel";
+import IntegrationsPanel from "./integrations-panel";
 
 type IconName = "activity" | "arrow-up-right" | "chevron-down" | "external" | "globe" | "grid" | "layers" | "link" | "plus" | "search" | "settings" | "users" | "x";
 
@@ -54,6 +56,7 @@ const navItems: { label: string; icon: IconName }[] = [
   { label: "Tasks", icon: "layers" },
   { label: "Deployments", icon: "layers" },
   { label: "Analytics", icon: "activity" },
+  { label: "AI Assistant", icon: "activity" },
   { label: "Activity", icon: "activity" },
   { label: "Integrations", icon: "link" },
 ];
@@ -166,7 +169,7 @@ export default function AdminPage() {
               <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Latest changes</span><h3>Recent activity</h3></div><button className="admin-text-button" onClick={() => setActiveNav("Activity")}>View activity <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-activity-list">{activityData.map((activity) => <div className="admin-activity-row" key={`${activity.title}-${activity.time}`}><span className={`admin-activity-dot ${activity.tone}`} /><span><strong>{activity.title}</strong><small>{activity.detail}</small></span><time>{activity.time}</time></div>)}</div></section>
               <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => showNotice("Deployment center opened")}><span><Icon name="layers" size={16} /></span><strong>Review deployments</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Team management opened")}><span><Icon name="users" size={16} /></span><strong>Manage team access</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Integration settings opened")}><span><Icon name="link" size={16} /></span><strong>Configure integrations</strong><Icon name="arrow-up-right" size={13} /></button></div></section>
             </div>
-          </> : activeNav === "Analytics" ? <AnalyticsPanel data={analytics} loading={analyticsLoading} /> : ["Pipeline", "Clients", "Tasks", "Activity"].includes(activeNav) ? <CrmPanel mode={activeNav as "Pipeline" | "Clients" | "Tasks" | "Activity"} /> : <section className="admin-panel admin-placeholder"><span className="admin-stat-icon blue"><Icon name={navItems.find((item) => item.label === activeNav)?.icon ?? "grid"} size={20} /></span><span className="admin-section-kicker">Admin module</span><h2>{activeNav}</h2><p>This workspace module is ready to connect to Supabase data and live provider actions.</p><button className="admin-primary-button" onClick={() => showNotice(`${activeNav} module queued for build`)}><Icon name="plus" size={15} />Start building</button></section>}
+          </> : activeNav === "Analytics" ? <AnalyticsPanel data={analytics} loading={analyticsLoading} /> : activeNav === "AI Assistant" ? <AiPanel /> : activeNav === "Integrations" ? <IntegrationsPanel /> : ["Pipeline", "Clients", "Tasks", "Activity"].includes(activeNav) ? <CrmPanel mode={activeNav as "Pipeline" | "Clients" | "Tasks" | "Activity"} /> : <section className="admin-panel admin-placeholder"><span className="admin-stat-icon blue"><Icon name={navItems.find((item) => item.label === activeNav)?.icon ?? "grid"} size={20} /></span><span className="admin-section-kicker">Admin module</span><h2>{activeNav}</h2><p>This workspace module is ready to connect to Supabase data and live provider actions.</p><button className="admin-primary-button" onClick={() => showNotice(`${activeNav} module queued for build`)}><Icon name="plus" size={15} />Start building</button></section>}
         </div>
       </section>
       {notice && <div className="admin-toast"><span>✓</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div>}
