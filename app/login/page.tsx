@@ -1,19 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nextPath, setNextPath] = useState("/admin");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const next = new URLSearchParams(window.location.search).get("next");
-    if (next?.startsWith("/")) setNextPath(next);
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,7 +18,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      window.location.assign(nextPath);
+      window.location.assign("/");
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : "Unable to sign in.");
     } finally {
