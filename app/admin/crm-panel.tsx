@@ -83,6 +83,7 @@ export default function CrmPanel({ mode }: { mode: "Pipeline" | "Clients" | "Tas
   const selectedActivities = (data?.activities ?? []).filter((activity) => activity.entity_type === "lead" && activity.entity_id === selectedLeadId);
 
   if (loading) return <section className="admin-panel admin-crm-loading">Loading CRM…</section>;
+  if (!data) return <section className="admin-panel admin-crm-loading">{error || "The CRM is unavailable."}</section>;
   return <div className="admin-crm">
     <section className="admin-welcome admin-crm-heading"><div><span className="admin-kicker">HBS business operations</span><h2>{mode}</h2><p>{mode === "Pipeline" ? "Manage every opportunity from first contact to signed client." : mode === "Clients" ? "Keep client contact details and account status in one place." : mode === "Tasks" ? "Track the work that keeps projects and sales moving." : "A clear record of changes made across the CRM."}</p></div>{mode !== "Activity" && data?.permissions.canEdit && <button className="admin-primary-button" onClick={() => setFormOpen((open) => !open)}>+ New {mode === "Pipeline" ? "lead" : mode === "Clients" ? "client" : "task"}</button>}</section>
     {error && <p className="admin-crm-error" role="alert">{error}</p>}
