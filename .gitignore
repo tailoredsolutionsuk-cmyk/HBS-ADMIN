@@ -5,4 +5,7 @@ out
 .env*
 !.env.example
 pnpm-debug.log*
+.install-temp/
+*.tsbuildinfo
+.vercel/
 
