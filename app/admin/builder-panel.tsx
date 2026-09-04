@@ -34,7 +34,7 @@ export default function BuilderPanel({ startNew = 0, onDirty }: { startNew?: num
   const dirty = Boolean(document && JSON.stringify(document) !== saved.current) || (step !== null && JSON.stringify(brief) !== JSON.stringify(EMPTY_BRIEF));
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => { const warn = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ''; } }; window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn); }, [dirty]);
-  const reloadList = useCallback(async () => { const data = await request(); setSites(data.sites); setMissing(data.readiness.missing); setClients(data.clients || []); setSetupWarnings([!data.readiness.backgroundRecovery ? 'CRON_SECRET: daily job recovery is not configured.' : '', !data.readiness.contactForms ? 'BUILDER_FORM_SECRET: enquiry forms and analytics are not configured.' : ''].filter(Boolean)); }, []);
+  const reloadList = useCallback(async () => { const data = await request(); setSites(data.sites); setMissing(data.readiness.missing); setClients(data.clients || []); setSetupWarnings([!data.readiness.databaseReady ? 'SUPABASE_SERVICE_ROLE_KEY: website drafts cannot be saved until the server database key is configured.' : '', !data.readiness.aiReady ? 'AI_GATEWAY_API_KEY: AI authentication needs setup, or enable supported Vercel OIDC.' : '', !data.readiness.backgroundRecovery ? 'CRON_SECRET: daily job recovery is not configured.' : '', !data.readiness.contactForms ? 'BUILDER_FORM_SECRET: enquiry forms and analytics are not configured.' : ''].filter(Boolean)); }, []);
   useEffect(() => { reloadList().catch(e => setError(e.message)).finally(() => setBusy('')); }, [reloadList]);
   function begin() {
     if (dirty && !window.confirm('Discard unsaved changes and start another website?')) return;
@@ -110,8 +110,8 @@ export default function BuilderPanel({ startNew = 0, onDirty }: { startNew?: num
     {error && <div className="wb-alert" role="alert">{error}</div>}
     {notice && <div className="wb-notice" role="status">{notice}</div>}
     {busy && <p role="status" className="wb-progress">{busy}</p>}
-    {setupWarnings.length>0&&<details className="wb-setup"><summary>Background recovery / public forms need configuration</summary>{setupWarnings.map(warning=><p key={warning}>{warning}</p>)}<p>Set these server-only secrets in Vercel and redeploy. Never paste secrets into website content.</p></details>}
-    {missing.length > 0 && <details className="wb-setup"><summary>Hosting setup needs attention — drafts are still available</summary><p>Add these server-only settings to HBS-ADMIN in Vercel: {missing.join(', ')}.</p></details>}
+    {setupWarnings.length>0&&<details className="wb-setup"><summary>Website services need configuration</summary>{setupWarnings.map(warning=><p key={warning}>{warning}</p>)}<p>Set these server-only secrets in Vercel and redeploy. Never paste secrets into website content.</p></details>}
+    {missing.length > 0 && <details className="wb-setup"><summary>Website setup needs attention</summary><p>Add these settings to HBS-ADMIN in Vercel, then redeploy: {missing.join(', ')}.</p></details>}
     {step !== null ? <form className="wb-wizard" onSubmit={async e => {
       e.preventDefault(); if (step < 2) { setStep(step + 1); return; }
       setBusy('Saving your four-page draft…'); setError('');

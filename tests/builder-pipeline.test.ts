@@ -81,3 +81,17 @@ test('promotion rechecks project, site, revision, commit and readiness; never re
   deployment={...deployment,readyState:'READY',projectId:'prj_admin'};await assert.rejects(()=>api.promote(id,2,target,'dpl_reviewed','commit'));
   assert.equal(posts.length,1);
 });
+test('an unverified domain retains its DNS instructions when ownership check is pending',async()=>{
+  Object.assign(process.env,{GITHUB_TOKEN:'test',GITHUB_OWNER:'example',GITHUB_ADMIN_REPO:'HBS-ADMIN',VERCEL_TOKEN:'test',VERCEL_TEAM_ID:'team_test',VERCEL_ADMIN_PROJECT_ID:'prj_admin',SUPABASE_SERVICE_ROLE_KEY:'test'});
+  const target={repo_id:1,repo_owner:'example',repo_name:resourceName(id),project_id:'prj_site'};
+  const api=providers(async(input)=>{
+    const path=new URL(String(input)).pathname;
+    if(path.endsWith('/verify'))return Response.json({error:'not_verified'},{status:400});
+    if(path.endsWith('/config'))return Response.json({misconfigured:true,recommendedCNAME:[{rank:1,value:'example.vercel-dns.com'}]});
+    if(path.includes('/domains/'))return Response.json({name:'www.example.test',projectId:'prj_site',verified:false,verification:[{type:'TXT',domain:'_vercel.example.test',value:'test-challenge'}]});
+    return Response.json({id:'prj_site',name:resourceName(id),accountId:'team_test'});
+  });
+  const result=await api.domain(id,target,'www.example.test');
+  assert.equal(result.verified,false);assert.equal(result.verification[0].value,'test-challenge');
+  assert.equal(result.recommendedCNAME[0].value,'example.vercel-dns.com');
+});

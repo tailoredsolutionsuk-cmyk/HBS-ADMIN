@@ -19,7 +19,10 @@ function startWorker(owner:string) {
 }
 export async function GET(request: Request) {
   try {
-    const owner = await builderUser(); await rateLimit(owner, 'read', 120);
+    const owner = await builderUser();
+    const readiness={...providerReadiness(),aiModel:process.env.BUILDER_AI_MODEL||'openai/gpt-5.4-mini',backgroundRecovery:(process.env.CRON_SECRET?.length||0)>=32,contactForms:(process.env.BUILDER_FORM_SECRET?.length||0)>=32,databaseReady:Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY&&process.env.NEXT_PUBLIC_SUPABASE_URL),aiReady:Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN)};
+    if(!readiness.databaseReady&&!new URL(request.url).search) return json({sites:[],clients:[],readiness});
+    await rateLimit(owner, 'read', 120);
     const generationId = new URL(request.url).searchParams.get('generation');
     if (generationId) {
       resourceName(generationId);
@@ -38,7 +41,7 @@ export async function GET(request: Request) {
     const client=await createClient();
     const clients=await client.from('clients').select('id,business_name').eq('archived',false).order('business_name');
     if(clients.error) throw new BuilderError('Could not load the client list.',503);
-    return json({ sites: data, clients:clients.data, readiness: {...providerReadiness(), aiModel:process.env.BUILDER_AI_MODEL||'openai/gpt-5.4-mini', backgroundRecovery:Boolean(process.env.CRON_SECRET), contactForms:Boolean(process.env.BUILDER_FORM_SECRET)} });
+    return json({ sites: data, clients:clients.data, readiness });
   } catch (error) { return failure(error); }
 }
 export async function POST(request: Request) {

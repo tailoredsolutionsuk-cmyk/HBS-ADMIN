@@ -13,7 +13,7 @@ export async function builderUser() {
   return data.user.id;
 }
 export function builderDB() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new BuilderError('The website builder database is not configured.', 503);
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new BuilderError('Website database setup required: add SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL to hbs-admin in Vercel, then redeploy. Never use a NEXT_PUBLIC_ prefix for the service-role key.', 503);
   return serviceClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 export async function ownedSite(id: string, owner: string): Promise<BuilderSite> {

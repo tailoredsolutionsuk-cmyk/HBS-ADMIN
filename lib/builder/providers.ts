@@ -123,7 +123,11 @@ export function providers(fetcher: typeof fetch = fetch) {
       let domain = await request('vercel', path, 'GET', undefined, true);
       if (!domain && attach) domain = await request('vercel', `/v10/projects/${encodeURIComponent(target.project_id!)}/domains`, 'POST', { name });
       if (!domain || domain.projectId !== target.project_id || domain.name !== name) throw new BuilderError('This domain is not assigned to this website.', 409);
-      if (!domain.verified) domain = await request('vercel', `/v9/projects/${encodeURIComponent(target.project_id!)}/domains/${name}/verify`, 'POST');
+      if (!domain.verified) {
+        // Missing DNS is an expected setup state, not a reason to hide the TXT challenge.
+        try { domain = await request('vercel', `/v9/projects/${encodeURIComponent(target.project_id!)}/domains/${name}/verify`, 'POST'); }
+        catch { /* Keep the provider's unverified domain and ownership instructions. */ }
+      }
       const dns = await request('vercel', `/v6/domains/${name}/config?projectIdOrName=${encodeURIComponent(target.project_id!)}`);
       return { name, verified: domain?.verified === true && dns?.misconfigured === false, ownershipVerified: domain?.verified === true, verification: domain?.verification || [], recommendedIPv4: dns?.recommendedIPv4 || [], recommendedCNAME: dns?.recommendedCNAME || [], misconfigured: dns?.misconfigured !== false, checkedAt: new Date().toISOString() };
     },
