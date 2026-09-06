@@ -4,7 +4,10 @@ import { createClient } from "../../../../lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const editableRoles = new Set(["owner", "admin", "editor"]);
+const deletableRoles = new Set(["owner", "admin"]);
 const pipelineStages = new Set(["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"]);
+const taskStatuses = new Set(["todo", "in_progress", "blocked", "done"]);
+const taskPriorities = new Set(["low", "medium", "high", "urgent"]);
 
 async function getAdmin() {
   const supabase = await createClient();
@@ -41,7 +44,7 @@ export async function GET() {
   const [clients, leads, tasks, notes, activities] = await Promise.all([
     supabase.from("clients").select("id,business_name,short_name,email,phone,website,domain,industry,status,created_at,updated_at").eq("archived", false).order("business_name"),
     supabase.from("leads").select("id,business_name,contact_name,name,email,phone,status,source,project_type,estimated_value,assigned_to,notes,help_needed,next_action,next_action_at,probability,lost_reason,won_at,last_contacted_at,stage_changed_at,converted_business_id,converted_at,created_at,updated_at").order("created_at", { ascending: false }),
-    supabase.from("checklist_items").select("id,client_id,title,notes,done,due_date,created_at,completed_at").order("done").order("due_date", { ascending: true, nullsFirst: false }),
+    supabase.from("checklist_items").select("id,client_id,title,notes,done,due_date,position,category,priority,status,assigned_to,created_at,completed_at,updated_at").order("done").order("due_date", { ascending: true, nullsFirst: false }).order("position"),
     supabase.from("crm_notes").select("id,entity_type,entity_id,note,created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("crm_activities").select("id,entity_type,entity_id,action,detail,created_at").order("created_at", { ascending: false }).limit(40),
   ]);
@@ -125,7 +128,9 @@ export async function POST(request: Request) {
     const title = clean(body.title, 300);
     if (!title) return NextResponse.json({ error: "TASK_TITLE_REQUIRED" }, { status: 400 });
     const id = `task-${crypto.randomUUID()}`;
-    result = await supabase.from("checklist_items").insert({ id, title, client_id: clean(body.clientId, 200) || null, notes: clean(body.notes, 2000) || null, due_date: clean(body.dueDate, 10) || null }).select().single();
+    const status = taskStatuses.has(clean(body.status, 30)) ? clean(body.status, 30) : "todo";
+    const priority = taskPriorities.has(clean(body.priority, 20)) ? clean(body.priority, 20) : "medium";
+    result = await supabase.from("checklist_items").insert({ id, title, client_id: clean(body.clientId, 200) || null, notes: clean(body.notes, 2000) || null, due_date: clean(body.dueDate, 10) || null, category: clean(body.category, 80) || "General", priority, status, done: status === "done", assigned_to: userId, completed_at: status === "done" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).select().single();
     activityId = id;
     detail = `Task created: ${title}`;
   } else if (entity === "note") {
@@ -197,9 +202,37 @@ export async function PATCH(request: Request) {
     result = await supabase.from("clients").update(updates).eq("id", id).select().single();
     detail = "Client details updated";
   } else if (entity === "task") {
-    const done = Boolean(body.done);
-    result = await supabase.from("checklist_items").update({ done, completed_at: done ? new Date().toISOString() : null }).eq("id", id).select().single();
-    detail = done ? "Task completed" : "Task reopened";
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body.title !== undefined) {
+      const title = clean(body.title, 300);
+      if (!title) return NextResponse.json({ error: "TASK_TITLE_REQUIRED" }, { status: 400 });
+      updates.title = title;
+    }
+    if (body.notes !== undefined) updates.notes = clean(body.notes, 2000) || null;
+    if (body.clientId !== undefined) updates.client_id = clean(body.clientId, 200) || null;
+    if (body.dueDate !== undefined) updates.due_date = clean(body.dueDate, 10) || null;
+    if (body.category !== undefined) updates.category = clean(body.category, 80) || "General";
+    if (body.priority !== undefined) {
+      const priority = clean(body.priority, 20);
+      if (!taskPriorities.has(priority)) return NextResponse.json({ error: "INVALID_TASK_PRIORITY" }, { status: 400 });
+      updates.priority = priority;
+    }
+    if (body.status !== undefined) {
+      const status = clean(body.status, 30);
+      if (!taskStatuses.has(status)) return NextResponse.json({ error: "INVALID_TASK_STATUS" }, { status: 400 });
+      const done = status === "done";
+      updates.status = status;
+      updates.done = done;
+      updates.completed_at = done ? new Date().toISOString() : null;
+      detail = done ? "Task completed" : `Task marked ${status.replace("_", " ")}`;
+    } else if (body.done !== undefined) {
+      const done = Boolean(body.done);
+      updates.done = done;
+      updates.status = done ? "done" : "todo";
+      updates.completed_at = done ? new Date().toISOString() : null;
+      detail = done ? "Task completed" : "Task reopened";
+    }
+    result = await supabase.from("checklist_items").update(updates).eq("id", id).select().single();
   } else {
     return NextResponse.json({ error: "INVALID_ENTITY" }, { status: 400 });
   }
@@ -209,3 +242,19 @@ export async function PATCH(request: Request) {
   return NextResponse.json({ data: result.data });
 }
 
+export async function DELETE(request: Request) {
+  const auth = await getAdmin();
+  if ("error" in auth) return auth.error;
+  const { supabase, userId, admin } = auth;
+  if (!deletableRoles.has(admin.role)) return NextResponse.json({ error: "ADMIN_ACCESS_REQUIRED" }, { status: 403 });
+
+  const body = await request.json().catch(() => ({}));
+  if (clean(body.entity, 30) !== "task") return NextResponse.json({ error: "INVALID_ENTITY" }, { status: 400 });
+  const id = clean(body.id, 200);
+  if (!id) return NextResponse.json({ error: "ID_REQUIRED" }, { status: 400 });
+
+  const result = await supabase.from("checklist_items").delete().eq("id", id).select("id,title").single();
+  if (result.error) return NextResponse.json({ error: "CRM_WRITE_FAILED", detail: result.error.message }, { status: 500 });
+  await supabase.from("crm_activities").insert({ entity_type: "task", entity_id: id, action: "task_deleted", detail: `Task deleted: ${result.data.title}`, created_by: userId });
+  return NextResponse.json({ data: { id } });
+}
