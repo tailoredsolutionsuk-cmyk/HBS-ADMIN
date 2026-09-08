@@ -11,13 +11,25 @@ function text(value: unknown, max = 2500) {
 
 const DEFAULT_AI_MODEL = "openai/gpt-5.4-mini";
 
+function gatewayErrorDetails(error: unknown) {
+  if (!(error instanceof Error)) return { statusCode: undefined, message: undefined };
+
+  const candidate = error as Error & { statusCode?: unknown };
+  return {
+    statusCode: typeof candidate.statusCode === "number" ? candidate.statusCode : undefined,
+    message: candidate.message.trim().slice(0, 300) || undefined,
+  };
+}
+
 function aiErrorCode(error: unknown) {
-  if (APICallError.isInstance(error)) {
-    if (error.statusCode === 401 || error.statusCode === 403) return "AI_AUTH_FAILED";
-    if (error.statusCode === 402) return "AI_BUDGET_REACHED";
-    if (error.statusCode === 404) return "AI_MODEL_UNAVAILABLE";
-    if (error.statusCode === 429) return "AI_RATE_LIMITED";
-  }
+  const { statusCode, message } = gatewayErrorDetails(error);
+  const upstreamStatus = APICallError.isInstance(error) ? error.statusCode : statusCode;
+  const reason = message?.toLowerCase() || "";
+
+  if (upstreamStatus === 402 || /budget|credit|quota/.test(reason)) return "AI_BUDGET_REACHED";
+  if (upstreamStatus === 401 || upstreamStatus === 403) return "AI_AUTH_FAILED";
+  if (upstreamStatus === 404) return "AI_MODEL_UNAVAILABLE";
+  if (upstreamStatus === 429) return "AI_RATE_LIMITED";
 
   if (error instanceof Error && error.name === "GatewayError") return "AI_AUTH_FAILED";
   return "AI_UNAVAILABLE";
@@ -50,12 +62,14 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = aiErrorCode(error);
     const status = code === "AI_BUDGET_REACHED" ? 402 : code === "AI_RATE_LIMITED" ? 429 : 503;
+    const gatewayError = gatewayErrorDetails(error);
 
     console.error("[api/admin/ai] AI Gateway request failed", {
       code,
       model,
-      upstreamStatus: APICallError.isInstance(error) ? error.statusCode : undefined,
+      upstreamStatus: APICallError.isInstance(error) ? error.statusCode : gatewayError.statusCode,
       errorType: error instanceof Error ? error.name : typeof error,
+      reason: gatewayError.message,
     });
 
     return NextResponse.json({ error: code }, { status });
