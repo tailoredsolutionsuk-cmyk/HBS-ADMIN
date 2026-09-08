@@ -26,6 +26,7 @@ function aiErrorCode(error: unknown) {
   const upstreamStatus = APICallError.isInstance(error) ? error.statusCode : statusCode;
   const reason = message?.toLowerCase() || "";
 
+  if (/credit card|payment method/.test(reason)) return "AI_BILLING_REQUIRED";
   if (upstreamStatus === 402 || /budget|credit|quota/.test(reason)) return "AI_BUDGET_REACHED";
   if (upstreamStatus === 401 || upstreamStatus === 403) return "AI_AUTH_FAILED";
   if (upstreamStatus === 404) return "AI_MODEL_UNAVAILABLE";
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ text: result.text, usage: result.usage, model });
   } catch (error) {
     const code = aiErrorCode(error);
-    const status = code === "AI_BUDGET_REACHED" ? 402 : code === "AI_RATE_LIMITED" ? 429 : 503;
+    const status = code === "AI_BILLING_REQUIRED" || code === "AI_BUDGET_REACHED" ? 402 : code === "AI_RATE_LIMITED" ? 429 : 503;
     const gatewayError = gatewayErrorDetails(error);
 
     console.error("[api/admin/ai] AI Gateway request failed", {

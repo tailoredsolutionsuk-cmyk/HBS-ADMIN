@@ -7,6 +7,7 @@ const starters = ["Summarise my sales pipeline and flag the best opportunities."
 
 const aiErrors: Record<string, string> = {
   AI_AUTH_FAILED: "The AI Gateway connection was rejected. An administrator needs to reconnect it in Vercel.",
+  AI_BILLING_REQUIRED: "Vercel AI Gateway needs a valid payment method before it can unlock the included free credits.",
   AI_BUDGET_REACHED: "The AI budget limit has been reached.",
   AI_MODEL_UNAVAILABLE: "The selected AI model is unavailable. An administrator needs to choose a supported Vercel AI Gateway model.",
   AI_RATE_LIMITED: "The AI assistant is busy right now. Please wait a moment and try again.",
