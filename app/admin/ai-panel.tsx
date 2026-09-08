@@ -5,6 +5,15 @@ import { FormEvent, useState } from "react";
 type Message = { role: "admin" | "assistant"; text: string };
 const starters = ["Summarise my sales pipeline and flag the best opportunities.", "What should I prioritise today?", "Draft a friendly follow-up for our newest lead."];
 
+const aiErrors: Record<string, string> = {
+  AI_AUTH_FAILED: "The AI Gateway connection was rejected. An administrator needs to reconnect it in Vercel.",
+  AI_BUDGET_REACHED: "The AI budget limit has been reached.",
+  AI_MODEL_UNAVAILABLE: "The selected AI model is unavailable. An administrator needs to choose a supported Vercel AI Gateway model.",
+  AI_RATE_LIMITED: "The AI assistant is busy right now. Please wait a moment and try again.",
+  AI_SCOPE_REQUIRED: "Only owners and admins can use the AI assistant.",
+  AI_UNAVAILABLE: "The AI assistant is temporarily unavailable. Please try again.",
+};
+
 export default function AiPanel() {
   const [messages, setMessages] = useState<Message[]>([{ role: "assistant", text: "I can review your live CRM, prioritise opportunities, draft follow-ups, and suggest next actions. What would you like to work on?" }]);
   const [prompt, setPrompt] = useState("");
@@ -22,7 +31,7 @@ export default function AiPanel() {
     try {
       const response = await fetch("/api/admin/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error === "AI_BUDGET_REACHED" ? "The AI budget limit has been reached." : body.error === "AI_SCOPE_REQUIRED" ? "Only owners and admins can use the AI assistant." : "The AI assistant is not configured yet.");
+      if (!response.ok) throw new Error(aiErrors[body.error] || "The AI assistant is temporarily unavailable. Please try again.");
       setMessages((current) => [...current, { role: "assistant", text: body.text }]);
     } catch (issue) { setError(issue instanceof Error ? issue.message : "AI is unavailable."); }
     finally { setLoading(false); }
