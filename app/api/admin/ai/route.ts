@@ -9,7 +9,7 @@ function text(value: unknown, max = 2500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-const DEFAULT_AI_MODEL = "openai/gpt-5.6-sol";
+const DEFAULT_AI_MODEL = "openai/gpt-5.4-mini";
 
 function aiErrorCode(error: unknown) {
   if (APICallError.isInstance(error)) {

@@ -29,7 +29,7 @@ export async function GET() {
       { id: "github", name: "GitHub", configured: Boolean(process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_ADMIN_REPO), detail: "Source and repository operations" },
       { id: "vercel", name: "Vercel", configured: Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TEAM_ID && process.env.VERCEL_ADMIN_PROJECT_ID), detail: "Deployment management API" },
       { id: "make", name: "Make", configured: Boolean(process.env.MAKE_API_TOKEN && process.env.MAKE_TEAM_ID), detail: "Business automations" },
-      { id: "ai", name: "AI Gateway", configured: Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN), detail: process.env.AI_MODEL || "openai/gpt-5.6-sol" },
+      { id: "ai", name: "AI Gateway", configured: Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN), detail: process.env.AI_MODEL || "openai/gpt-5.4-mini" },
     ],
   });
 }
