@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
+import { summarizeClientAnalytics, type ClientPageView } from "../../../../lib/crm/client-analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -41,17 +42,20 @@ export async function GET() {
   if ("error" in auth) return auth.error;
   const { supabase, admin } = auth;
 
-  const [clients, leads, tasks, notes, activities] = await Promise.all([
+  const analyticsSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [clients, leads, tasks, notes, activities, pageViews] = await Promise.all([
     supabase.from("clients").select("id,business_name,short_name,email,phone,website,domain,industry,status,created_at,updated_at").eq("archived", false).order("business_name"),
     supabase.from("leads").select("id,business_name,contact_name,name,email,phone,status,source,project_type,estimated_value,assigned_to,notes,help_needed,next_action,next_action_at,probability,lost_reason,won_at,last_contacted_at,stage_changed_at,converted_business_id,converted_at,created_at,updated_at").order("created_at", { ascending: false }),
     supabase.from("checklist_items").select("id,client_id,title,notes,done,due_date,position,category,priority,status,assigned_to,created_at,completed_at,updated_at").order("done").order("due_date", { ascending: true, nullsFirst: false }).order("position"),
     supabase.from("crm_notes").select("id,entity_type,entity_id,note,created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("crm_activities").select("id,entity_type,entity_id,action,detail,created_at").order("created_at", { ascending: false }).limit(40),
+    supabase.from("page_views").select("client_id,path,timestamp,visitor_hash,referrer,device,browser").not("client_id", "is", null).gte("timestamp", analyticsSince).order("timestamp", { ascending: false }).limit(5000),
   ]);
 
-  const failed = [clients, leads, tasks, notes, activities].find((result) => result.error);
+  const failed = [clients, leads, tasks, notes, activities, pageViews].find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: "CRM_QUERY_FAILED", detail: failed.error.message }, { status: 500 });
 
+  const clientRows = clients.data ?? [];
   const leadRows = leads.data ?? [];
   const openStatuses = new Set(["new", "contacted", "qualified", "proposal"]);
   const openLeads = leadRows.filter((lead) => openStatuses.has(String(lead.status || "new").toLowerCase()));
@@ -59,13 +63,14 @@ export async function GET() {
   return NextResponse.json({
     admin,
     permissions: { canEdit: editableRoles.has(admin.role) },
-    clients: clients.data ?? [],
+    clients: clientRows,
+    clientAnalytics: summarizeClientAnalytics(clientRows.map((client) => client.id), (pageViews.data ?? []) as ClientPageView[]),
     leads: leadRows,
     tasks: tasks.data ?? [],
     notes: notes.data ?? [],
     activities: activities.data ?? [],
     metrics: {
-      clients: clients.data?.length ?? 0,
+      clients: clientRows.length,
       openLeads: openLeads.length,
       pipelineValue: openLeads.reduce((total, lead) => total + Number(lead.estimated_value || 0), 0),
       weightedValue: openLeads.reduce((total, lead) => total + Number(lead.estimated_value || 0) * Number(lead.probability || 0) / 100, 0),
