@@ -1,0 +1,21 @@
+.portal-login-form .portal-code-sent {
+  margin: 0 0 16px;
+}
+
+.portal-login-form .portal-otp-input {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: .32em;
+  text-align: center;
+}
+
+.portal-login-form .portal-text-button {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--forest);
+  border: 1px solid #cbd4cd;
+}
+
+.portal-login-form .portal-text-button:hover {
+  background: #f5f7f5;
+}

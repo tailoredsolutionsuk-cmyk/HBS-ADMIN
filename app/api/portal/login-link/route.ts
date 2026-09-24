@@ -5,7 +5,7 @@ import { portalService } from "../../../../lib/portal/server";
 import { normalisePortalEmail } from "../../../../lib/portal/validation";
 
 export const dynamic = "force-dynamic";
-const neutral = { message: "If portal access is enabled for that email, a secure sign-in link is on its way." };
+const neutral = { message: "If portal access is enabled for that email, a six-digit sign-in code is on its way." };
 
 export async function POST(request: NextRequest) {
   if (request.headers.get("origin") !== request.nextUrl.origin) return NextResponse.json({ error: "Open the client portal to sign in." }, { status: 403 });
@@ -29,9 +29,7 @@ export async function POST(request: NextRequest) {
     const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const configuredOrigin = process.env.PORTAL_PUBLIC_ORIGIN;
-    const redirectOrigin = configuredOrigin && process.env.NODE_ENV === "production" ? new URL(configuredOrigin).origin : request.nextUrl.origin;
-    await auth.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${redirectOrigin}/auth/complete` } });
+    await auth.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
     return NextResponse.json(neutral, { status: 202, headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json(neutral, { status: 202, headers: { "Cache-Control": "no-store" } });

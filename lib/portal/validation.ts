@@ -5,6 +5,10 @@ export function normalisePortalEmail(value: unknown): string | null {
   return email;
 }
 
+export function isValidPortalOtp(value: unknown): boolean {
+  return typeof value === "string" && /^\d{6}$/.test(value.trim());
+}
+
 export function safePortalUrl(value: unknown): string | null {
   if (typeof value !== "string" || value.length > 2048) return null;
   try {
