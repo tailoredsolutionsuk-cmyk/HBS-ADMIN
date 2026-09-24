@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
 import { summarizeClientAnalytics, type ClientPageView } from "../../../../lib/crm/client-analytics";
+import { portalService } from "../../../../lib/portal/server";
+import { normalisePortalEmail } from "../../../../lib/portal/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +46,7 @@ export async function GET() {
 
   const analyticsSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const [clients, leads, tasks, notes, activities, pageViews] = await Promise.all([
-    supabase.from("clients").select("id,business_name,short_name,email,phone,website,domain,industry,status,created_at,updated_at").eq("archived", false).order("business_name"),
+    supabase.from("clients").select("id,business_name,short_name,email,phone,website,domain,industry,status,portal_enabled,portal_email,created_at,updated_at").eq("archived", false).order("business_name"),
     supabase.from("leads").select("id,business_name,contact_name,name,email,phone,status,source,project_type,estimated_value,assigned_to,notes,help_needed,next_action,next_action_at,probability,lost_reason,won_at,last_contacted_at,stage_changed_at,converted_business_id,converted_at,created_at,updated_at").order("created_at", { ascending: false }),
     supabase.from("checklist_items").select("id,client_id,title,notes,done,due_date,position,category,priority,status,assigned_to,created_at,completed_at,updated_at").order("done").order("due_date", { ascending: true, nullsFirst: false }).order("position"),
     supabase.from("crm_notes").select("id,entity_type,entity_id,note,created_at").order("created_at", { ascending: false }).limit(100),
@@ -62,7 +64,7 @@ export async function GET() {
   const now = Date.now();
   return NextResponse.json({
     admin,
-    permissions: { canEdit: editableRoles.has(admin.role) },
+    permissions: { canEdit: editableRoles.has(admin.role), canManagePortal: deletableRoles.has(admin.role) },
     clients: clientRows,
     clientAnalytics: summarizeClientAnalytics(clientRows.map((client) => client.id), (pageViews.data ?? []) as ClientPageView[]),
     leads: leadRows,
@@ -81,6 +83,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "INVALID_ORIGIN" }, { status: 403 });
   const auth = await getAdmin();
   if ("error" in auth) return auth.error;
   const { supabase, userId, admin } = auth;
@@ -92,6 +96,7 @@ export async function POST(request: Request) {
   let activityEntity = entity;
   let activityId = "";
   let detail = "";
+  let activityAction = `${entity}_created`;
 
   if (entity === "lead") {
     const businessName = clean(body.businessName, 200);
@@ -156,12 +161,24 @@ export async function POST(request: Request) {
     activityId = leadId;
     detail = `Lead converted to client ${conversion.data}`;
     result = { data: { clientId: conversion.data }, error: null };
+  } else if (entity === "portal_access") {
+    if (!deletableRoles.has(admin.role)) return NextResponse.json({ error: "ADMIN_ACCESS_REQUIRED" }, { status: 403 });
+    const id = clean(body.id, 200);
+    const enabled = body.enabled === true;
+    const email = enabled ? normalisePortalEmail(body.email) : null;
+    if (!id) return NextResponse.json({ error: "CLIENT_ID_REQUIRED" }, { status: 400 });
+    if (enabled && !email) return NextResponse.json({ error: "VALID_PORTAL_EMAIL_REQUIRED" }, { status: 400 });
+    result = await portalService().from("clients").update({ portal_enabled: enabled, portal_email: email, updated_at: new Date().toISOString() }).eq("id", id).eq("archived", false).select("id,business_name,portal_enabled,portal_email").single();
+    activityEntity = "client";
+    activityId = id;
+    activityAction = enabled ? "portal_access_enabled" : "portal_access_disabled";
+    detail = enabled ? "Client portal access enabled" : "Client portal access disabled";
   } else {
     return NextResponse.json({ error: "INVALID_ENTITY" }, { status: 400 });
   }
 
   if (result.error) return NextResponse.json({ error: "CRM_WRITE_FAILED", detail: result.error.message }, { status: 500 });
-  await supabase.from("crm_activities").insert({ entity_type: activityEntity, entity_id: activityId, action: `${entity}_created`, detail, created_by: userId });
+  await supabase.from("crm_activities").insert({ entity_type: activityEntity, entity_id: activityId, action: activityAction, detail, created_by: userId });
   return NextResponse.json({ data: result.data }, { status: 201 });
 }
 
