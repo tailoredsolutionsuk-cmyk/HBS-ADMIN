@@ -11,6 +11,7 @@ export function portalService() {
 }
 
 export async function portalAccount() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const auth = await createClient();
   const { data, error } = await auth.auth.getUser();
   const email = normalisePortalEmail(data.user?.email);
