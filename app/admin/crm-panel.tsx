@@ -63,6 +63,8 @@ export default function CrmPanel({ mode }: { mode: "Pipeline" | "Clients" | "Tas
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [taskView, setTaskView] = useState("open");
   const [taskPriority, setTaskPriority] = useState("all");
+  const [portalClient, setPortalClient] = useState<Client | null>(null);
+  const [portalEmail, setPortalEmail] = useState("");
 
   async function load() {
     setError("");
@@ -117,19 +119,28 @@ export default function CrmPanel({ mode }: { mode: "Pipeline" | "Clients" | "Tas
     try { await request("POST", { entity: "conversion", id: lead.id }); } catch (issue) { setError(issue instanceof Error ? issue.message : "The lead could not be converted."); } finally { setSaving(false); }
   }
 
-  async function togglePortal(client: Client) {
+  function togglePortal(client: Client) {
     if (!data?.permissions.canManagePortal) return;
-    if (client.portal_enabled) {
-      if (!window.confirm(`Disable portal access for ${client.business_name}? Existing sign-in sessions will no longer show client data.`)) return;
-      try { await request("POST", { entity: "portal_access", id: client.id, enabled: false }); }
-      catch (issue) { setError(issue instanceof Error ? issue.message : "Portal access could not be disabled."); }
-      return;
-    }
-    const email = window.prompt(`Email address allowed to access ${client.business_name}'s portal:`, client.portal_email || client.email || "");
-    if (email === null) return;
-    setError("");
-    try { await request("POST", { entity: "portal_access", id: client.id, enabled: true, email }); }
-    catch (issue) { setError(issue instanceof Error ? issue.message : "Portal access could not be enabled."); }
+    setPortalClient(client);
+    setPortalEmail(client.portal_email || client.email || "");
+  }
+
+  async function savePortalAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!portalClient) return;
+    setSaving(true); setError("");
+    try {
+      await request("POST", {
+        entity: "portal_access",
+        id: portalClient.id,
+        enabled: !portalClient.portal_enabled,
+        ...(!portalClient.portal_enabled ? { email: portalEmail.trim() } : {}),
+      });
+      setPortalClient(null);
+      setPortalEmail("");
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "Portal access could not be updated.");
+    } finally { setSaving(false); }
   }
 
   function dragStart(event: DragEvent<HTMLElement>, leadId: string) { event.dataTransfer.setData("text/plain", leadId); event.dataTransfer.effectAllowed = "move"; }
@@ -176,6 +187,11 @@ export default function CrmPanel({ mode }: { mode: "Pipeline" | "Clients" | "Tas
     {mode === "Pipeline" && <><section className="admin-panel admin-pipeline-toolbar"><div className="admin-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search leads…" /></div><label>Stage<select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}><option>All</option>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select></label><label>Follow-ups<select value={followUpFilter} onChange={(event) => setFollowUpFilter(event.target.value)}><option value="all">All</option><option value="overdue">Overdue</option><option value="scheduled">Scheduled</option><option value="unscheduled">Not scheduled</option></select></label></section><section className="admin-pipeline">{stages.filter((stage) => stageFilter === "All" || stage === stageFilter).map((stage) => <div className={`admin-pipeline-column stage-${stage.toLowerCase()}`} key={stage} onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, stage)}><header><span>{stage}</span><b>{filteredLeads.filter((lead) => lead.status.toLowerCase() === stage.toLowerCase()).length}</b></header>{filteredLeads.filter((lead) => lead.status.toLowerCase() === stage.toLowerCase()).map((lead) => { const overdue = lead.next_action_at && new Date(lead.next_action_at).valueOf() < Date.now() && !["Won", "Lost"].includes(lead.status); return <article className="admin-lead-card" key={lead.id} draggable={data.permissions.canEdit} onDragStart={(event) => dragStart(event, lead.id)} onClick={() => setSelectedLeadId(lead.id)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") setSelectedLeadId(lead.id); }}><div className="admin-lead-card-top"><span className="admin-section-kicker">{lead.source || "Direct"}</span><span>{lead.probability}%</span></div><h3>{lead.business_name}</h3><p>{lead.contact_name || lead.name}</p><strong>{money(Number(lead.estimated_value || 0))}</strong><small>{lead.help_needed || "No requirement added"}</small><div className={`admin-follow-up ${overdue ? "overdue" : ""}`}><b>{lead.next_action || "Next action not set"}</b><span>{overdue ? "Overdue · " : ""}{lead.next_action_at ? when(lead.next_action_at) : "No follow-up set"}</span></div>{data.permissions.canEdit && <select aria-label={`Stage for ${lead.business_name}`} value={lead.status} onClick={(event) => event.stopPropagation()} onChange={(event) => update("lead", lead.id, { status: event.target.value, probability: stageProbability[event.target.value] })}>{stages.map((item) => <option key={item}>{item}</option>)}</select>}</article>; })}<button className="admin-pipeline-add" onClick={() => setFormOpen(true)}>+ Add lead</button></div>)}</section></>}
 
     {mode === "Clients" && <>
+      {portalClient && <form className="admin-panel admin-crm-form admin-portal-access-form" onSubmit={savePortalAccess}>
+        <div className="admin-panel-heading"><div><span className="admin-section-kicker">Client portal access</span><h3>{portalClient.portal_enabled ? "Disable" : "Enable"} access for {portalClient.business_name}</h3></div><button type="button" className="admin-text-button" onClick={() => setPortalClient(null)}>Cancel</button></div>
+        {portalClient.portal_enabled ? <p>Existing sign-in sessions will no longer show this client&apos;s data.</p> : <label>Allowed email address<input type="email" required autoFocus value={portalEmail} onChange={(event) => setPortalEmail(event.target.value)} placeholder="client@example.com" /></label>}
+        <button className={portalClient.portal_enabled ? "admin-danger-button" : "admin-primary-button"} disabled={saving}>{saving ? "Saving…" : portalClient.portal_enabled ? "Disable portal access" : "Enable portal access"}</button>
+      </form>}
       <section className="admin-panel"><div className="admin-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients…" /></div><div className="admin-crm-table"><div className="admin-crm-table-head"><span>Business</span><span>Contact</span><span>Website</span><span>Status</span></div>{filteredClients.map((client) => <div className="admin-crm-table-row" key={client.id}><span><strong>{client.business_name}</strong><small>{client.industry || "Client"}</small></span><span>{client.email ? <a href={`mailto:${client.email}`}>{client.email}</a> : "No email"}<small>{client.phone || "No phone"}</small></span><span>{client.domain || "Not connected"}</span><span className="admin-client-access"><span className={`admin-status ${client.portal_enabled ? "live" : ""}`}><i />{client.portal_enabled ? "Portal on" : client.status || "active"}</span>{data.permissions.canManagePortal && <button type="button" className="admin-text-button" onClick={() => togglePortal(client)}>{client.portal_enabled ? "Disable portal" : "Enable portal"}</button>}<small>{client.portal_enabled ? client.portal_email : "No portal access"}</small></span></div>)}</div></section>
       <section className="admin-client-analytics" aria-labelledby="client-analytics-title"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Last 30 days</span><h3 id="client-analytics-title">Client website analytics</h3></div><span className="admin-client-analytics-count">{filteredClients.length} client{filteredClients.length === 1 ? "" : "s"}</span></div>{filteredClients.length ? <div className="admin-client-analytics-grid">{filteredClients.map((client) => <ClientAnalyticsCard key={client.id} client={client} analytics={analyticsByClient.get(client.id)} />)}</div> : <p className="admin-crm-empty">No clients match this search.</p>}</section>
     </>}
