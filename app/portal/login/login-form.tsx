@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 export default function PortalLoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -14,7 +12,7 @@ export default function PortalLoginForm() {
   async function requestCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
-    setMessage("");
+    setMessage("Checking your code securely. This can take up to 30 seconds…");
     try {
       const response = await fetch("/api/portal/login-link", {
         method: "POST",
@@ -44,8 +42,8 @@ export default function PortalLoginForm() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "That code is invalid or has expired.");
-      router.replace("/portal");
-      router.refresh();
+      setMessage("Code accepted. Opening your client portal…");
+      window.location.replace("/portal");
     } catch (issue) {
       setMessage(issue instanceof Error ? issue.message : "That code is invalid or has expired.");
       setBusy(false);
@@ -56,5 +54,5 @@ export default function PortalLoginForm() {
     return <form className="portal-login-form" onSubmit={requestCode}><label>Work email<input type="email" autoComplete="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@business.co.uk" /></label><button disabled={busy}>{busy ? "Sending code…" : "Email me a sign-in code"}</button>{message && <p role="status">{message}</p>}</form>;
   }
 
-  return <form className="portal-login-form" onSubmit={verifyCode}><p className="portal-code-sent">Code sent to <strong>{email}</strong></p><label>Six-digit code<input className="portal-otp-input" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6} pattern="[0-9]{6}" required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" /></label><button disabled={busy || code.length !== 6}>{busy ? "Verifying…" : "Verify and sign in"}</button><button className="portal-text-button" type="button" disabled={busy} onClick={() => { setStep("email"); setCode(""); setMessage(""); }}>Request a new code</button>{message && <p role="status">{message}</p>}</form>;
+  return <form className="portal-login-form" onSubmit={verifyCode}><p className="portal-code-sent">Code sent to <strong>{email}</strong></p><label>Six-digit code<input className="portal-otp-input" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6} pattern="[0-9]{6}" required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" /></label><button disabled={busy || code.length !== 6}>{busy ? "Signing you in…" : "Verify and sign in"}</button><button className="portal-text-button" type="button" disabled={busy} onClick={() => { setStep("email"); setCode(""); setMessage(""); }}>Request a new code</button>{message && <p role="status">{message}</p>}</form>;
 }
