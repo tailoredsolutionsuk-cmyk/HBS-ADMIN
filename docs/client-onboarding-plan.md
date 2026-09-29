@@ -46,7 +46,8 @@ Create project → exactly one checklist → client saves and submits brief → 
 - tests/onboarding.integration.sql passed under the actual service_role, with all fixtures rolled back: repeat creation, conflicting retries, viewer rejection, cross-client rejection, incomplete briefs, stale revisions, submission, requested changes, revoked access and approval locking.
 - Rate limiter verified under service_role; zero retained test clients.
 - Security advisor: new tables intentionally have RLS with no browser policies and revoked anon/authenticated grants. Access is exclusively through authenticated server routes. Existing leaked-password protection warning is outside this migration.
-- Preview 528cff2 deployed READY: https://hbs-admin-77kyoymit-harleyjayy14-7124s-projects.vercel.app/admin .
-- Browser confirmed the Onboarding navigation and safe missing-configuration state. The preview is missing one or more of NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY and SUPABASE_SERVICE_ROLE_KEY. Check these in Vercel preview scope; use a test backend or explicitly approve access to the existing HBS database for this branch only. Never expose the service-role key through a NEXT_PUBLIC_ variable.
-- Authenticated admin/client preview acceptance is blocked on that configuration; production has not been promoted.
+- The three Supabase variables are now duplicated in Vercel for Preview branch `codex/client-onboarding` only. Production variables and all other previews are unchanged. The service key remains a server-side Secret; only URL and publishable key use `NEXT_PUBLIC_`.
+- Connected preview `3d2f103` deployed READY: https://hbs-admin-l0izhy0ql-harleyjayy14-7124s-projects.vercel.app/ .
+- Browser confirmed the admin login renders and an unauthenticated `/api/admin/onboarding` request reaches the configured application and returns a cache-disabled 401 `Please sign in to HBS Admin.` rather than the missing-configuration response.
+- Authenticated admin/client preview acceptance still requires fresh sessions on the preview hostname; production has not been promoted.
 
