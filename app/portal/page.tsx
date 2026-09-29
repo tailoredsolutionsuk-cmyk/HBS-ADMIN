@@ -3,6 +3,7 @@ import { summarizeClientAnalytics } from "../../lib/crm/client-analytics";
 import { portalAccount } from "../../lib/portal/server";
 import { safePortalUrl } from "../../lib/portal/validation";
 import "./portal.css";
+import PortalOnboarding from "./onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,7 @@ export default async function PortalPage() {
       <div className="portal-hero-actions"><span className="portal-status">Account active</span>{directUrl && <a className="portal-primary-link" href={directUrl} target="_blank" rel="noopener noreferrer">Visit website ↗</a>}</div>
     </section>
 
+    <PortalOnboarding />
     <section className="portal-stats">
       <article><span>Page views</span><strong>{number.format(analytics.views)}</strong><small>Last 30 days</small></article>
       <article><span>Unique visitors</span><strong>{number.format(analytics.visitors)}</strong><small>Last 30 days</small></article>

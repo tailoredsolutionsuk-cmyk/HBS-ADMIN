@@ -51,7 +51,7 @@ function ClientAnalyticsCard({ client, analytics }: { client: Client; analytics:
   </article>;
 }
 
-export default function CrmPanel({ mode, startCreate = 0 }: { mode: "Pipeline" | "Clients" | "Tasks"; startCreate?: number }) {
+export default function CrmPanel({ mode, startCreate = 0, onStartProject }: { mode: "Pipeline" | "Clients" | "Tasks"; startCreate?: number; onStartProject?: (clientId: string) => void }) {
   const [data, setData] = useState<CrmData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -124,7 +124,10 @@ export default function CrmPanel({ mode, startCreate = 0 }: { mode: "Pipeline" |
 
   async function convertLead(lead: Lead) {
     setSaving(true); setError("");
-    try { await request("POST", { entity: "conversion", id: lead.id }); } catch (issue) { setError(issue instanceof Error ? issue.message : "The lead could not be converted."); } finally { setSaving(false); }
+    try {
+      const converted = await request("POST", { entity: "conversion", id: lead.id });
+      if (typeof converted.data?.clientId === "string") onStartProject?.(converted.data.clientId);
+    } catch (issue) { setError(issue instanceof Error ? issue.message : "The lead could not be converted."); } finally { setSaving(false); }
   }
 
   function togglePortal(client: Client) {
@@ -200,7 +203,7 @@ export default function CrmPanel({ mode, startCreate = 0 }: { mode: "Pipeline" |
         {portalClient.portal_enabled ? <p>Existing sign-in sessions will no longer show this client&apos;s data.</p> : <label>Allowed email address<input type="email" required autoFocus value={portalEmail} onChange={(event) => setPortalEmail(event.target.value)} placeholder="client@example.com" /></label>}
         <button className={portalClient.portal_enabled ? "admin-danger-button" : "admin-primary-button"} disabled={saving}>{saving ? "Saving…" : portalClient.portal_enabled ? "Disable portal access" : "Enable portal access"}</button>
       </form>}
-      <section className="admin-panel"><div className="admin-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients…" /></div><div className="admin-crm-table"><div className="admin-crm-table-head"><span>Business</span><span>Contact</span><span>Website</span><span>Status</span></div>{filteredClients.map((client) => <div className="admin-crm-table-row" key={client.id}><span><strong>{client.business_name}</strong><small>{client.industry || "Client"}</small></span><span>{client.email ? <a href={`mailto:${client.email}`}>{client.email}</a> : "No email"}<small>{client.phone || "No phone"}</small></span><span>{client.domain || "Not connected"}</span><span className="admin-client-access"><span className={`admin-status ${client.portal_enabled ? "live" : ""}`}><i />{client.portal_enabled ? "Portal on" : client.status || "active"}</span>{data.permissions.canManagePortal && <button type="button" className="admin-text-button" onClick={() => togglePortal(client)}>{client.portal_enabled ? "Disable portal" : "Enable portal"}</button>}<small>{client.portal_enabled ? client.portal_email : "No portal access"}</small></span></div>)}</div></section>
+<section className="admin-panel"><div className="admin-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients…" /></div><div className="admin-crm-table"><div className="admin-crm-table-head"><span>Business</span><span>Contact</span><span>Website</span><span>Status</span></div>{filteredClients.map((client) => <div className="admin-crm-table-row" key={client.id}><span><strong>{client.business_name}</strong><small>{client.industry || "Client"}</small></span><span>{client.email ? <a href={`mailto:${client.email}`}>{client.email}</a> : "No email"}<small>{client.phone || "No phone"}</small></span><span>{client.domain || "Not connected"}</span><span className="admin-client-access"><span className={`admin-status ${client.portal_enabled ? "live" : ""}`}><i />{client.portal_enabled ? "Portal on" : client.status || "active"}</span>{data.permissions.canManagePortal && <button type="button" className="admin-text-button" onClick={() => togglePortal(client)}>{client.portal_enabled ? "Disable portal" : "Enable portal"}</button>}<small>{client.portal_enabled ? client.portal_email : "No portal access"}</small>{data.permissions.canEdit && onStartProject && <button type="button" className="admin-text-button" onClick={() => onStartProject(client.id)}>Start project</button>}</span></div>)}</div></section>
       <section className="admin-client-analytics" aria-labelledby="client-analytics-title"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Last 30 days</span><h3 id="client-analytics-title">Client website analytics</h3></div><span className="admin-client-analytics-count">{filteredClients.length} client{filteredClients.length === 1 ? "" : "s"}</span></div>{filteredClients.length ? <div className="admin-client-analytics-grid">{filteredClients.map((client) => <ClientAnalyticsCard key={client.id} client={client} analytics={analyticsByClient.get(client.id)} />)}</div> : <p className="admin-crm-empty">No clients match this search.</p>}</section>
     </>}
     {mode === "Tasks" && <>

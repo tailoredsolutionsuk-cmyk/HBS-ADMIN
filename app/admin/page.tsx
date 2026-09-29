@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AiPanel from "./ai-panel";
 import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
 import CrmPanel from "./crm-panel";
 import IntegrationsPanel from "./integrations-panel";
 
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
+const OnboardingPanel = dynamic(() => import("./onboarding-panel"), { loading: () => <DashboardSkeleton label="Opening onboarding" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
@@ -74,6 +75,7 @@ export default function AdminPage() {
   const [builderStart, setBuilderStart] = useState(0);
   const [builderDirty, setBuilderDirty] = useState(false);
   const [createSignal, setCreateSignal] = useState(0);
+  const [onboardingClient, setOnboardingClient] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [websites, setWebsites] = useState<Website[]>([]);
@@ -114,13 +116,14 @@ export default function AdminPage() {
     return () => { mounted = false; };
   }, []);
 
-  const module = useMemo(() => {
+  const module = (() => {
     if (activeView === "Overview") return <Overview websites={websites} activities={activities} stats={stats} crm={crm} loading={loading} onNavigate={navigate} onCreate={create} />;
     if (activeView === "Websites") return <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} />;
     if (activeView === "AI Assistant") return <AiPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
-    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} />;
-  }, [activeView, activities, builderStart, createSignal, crm, loading, stats, websites]);
+    if (activeView === "Onboarding") return <OnboardingPanel initialClientId={onboardingClient} />;
+    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} onStartProject={(clientId) => { setOnboardingClient(clientId); navigate("Onboarding"); }} />;
+  })();
 
   return <AdminShell activeView={activeView} collapsed={collapsed} mobileOpen={mobileOpen} connected={connected} loading={loading} onNavigate={navigate} onToggleCollapsed={() => setCollapsed((value) => !value)} onToggleMobile={() => setMobileOpen((value) => !value)}><div className="admin-main">{module}</div>{notice ? <div className="admin-toast" role="status"><span>!</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div> : null}</AdminShell>;
 }
