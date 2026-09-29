@@ -1,155 +1,126 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import CrmPanel from "./crm-panel";
-import AiPanel from "./ai-panel";
-import IntegrationsPanel from "./integrations-panel";
 import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
+import AiPanel from "./ai-panel";
+import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
+import CrmPanel from "./crm-panel";
+import IntegrationsPanel from "./integrations-panel";
 
-const BuilderPanel = dynamic(() => import('./builder-panel'), { loading: () => <p>Opening website studio…</p> });
-
-type IconName = "activity" | "arrow-up-right" | "chevron-down" | "external" | "globe" | "grid" | "layers" | "link" | "plus" | "search" | "settings" | "users" | "x";
-
-function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
-  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
-  const paths: Record<IconName, React.ReactNode> = {
-    activity: <><path d="M3 12h4l2.2-6 4.4 12 2.2-6H21" /></>,
-    "arrow-up-right": <><path d="M7 17 17 7" /><path d="M7 7h10v10" /></>,
-    "chevron-down": <path d="m6 9 6 6 6-6" />,
-    external: <><path d="M14 3h7v7" /><path d="M10 14 21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></>,
-    globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
-    grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
-    layers: <><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,
-    link: <><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2" /><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2" /></>,
-    plus: <><path d="M12 5v14M5 12h14" /></>,
-    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 5 5" /></>,
-    settings: <><circle cx="12" cy="12" r="3.5" /><path d="M19.4 15a2 2 0 1 0 0 2.8M4.6 9a2 2 0 1 0 0-2.8M15 4.6a2 2 0 1 0 2.8 0M9 19.4a2 2 0 1 0-2.8 0M4 12h2M18 12h2M12 4v2M12 18v2" /></>,
-    users: <><circle cx="9" cy="8" r="3" /><path d="M3 20c.6-3.3 2.5-5 6-5s5.4 1.7 6 5M16 5.5a3 3 0 0 1 0 5.8M17 15c2.2.2 3.5 1.5 4 4" /></>,
-    x: <><path d="m6 6 12 12M18 6 6 18" /></>,
-  };
-  return <svg {...common}>{paths[name]}</svg>;
-}
+const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
 type DashboardStats = { activeWebsites: number | string; deployments: number | string; teamMembers: number | string; uptime: string; pageViews30d?: number };
+type CrmSummary = {
+  leads: { id: string; business_name: string; next_action: string | null; next_action_at: string | null; status: string }[];
+  tasks: { id: string; title: string; due_date: string | null; done: boolean; priority: string }[];
+  metrics: { clients: number; openLeads: number; pipelineValue: number; weightedValue: number; overdueFollowUps: number; tasksDue: number };
+};
 
-const fallbackWebsites: Website[] = [
-  { name: "HBS Marketing", domain: "hbsmarketing.co.uk", type: "Marketing site", status: "Live", color: "peach", updated: "12 min ago", deployment: "Production" },
-  { name: "HBS Client Dashboard", domain: "hbs-client-dashbaord.vercel.app", type: "Client portal", status: "Live", color: "blue", updated: "1 hour ago", deployment: "Production" },
-  { name: "Autotek Mobile Mechanics", domain: "autotekmobilemechanics.vercel.app", type: "Business site", status: "Live", color: "mint", updated: "Yesterday", deployment: "Production" },
-  { name: "Pollards Fruit & Veg", domain: "pollards-preview.vercel.app", type: "Commerce site", status: "Preview", color: "lavender", updated: "2 days ago", deployment: "Preview" },
-];
+const fallbackStats: DashboardStats = { activeWebsites: 0, deployments: "—", teamMembers: "—", uptime: "—", pageViews30d: 0 };
+const fallbackCrm: CrmSummary = { leads: [], tasks: [], metrics: { clients: 0, openLeads: 0, pipelineValue: 0, weightedValue: 0, overdueFollowUps: 0, tasksDue: 0 } };
+const money = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
+const shortDate = (value: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(value));
 
-const fallbackActivities: Activity[] = [
-  { title: "Production deployment completed", detail: "HBS Marketing · main", time: "12 min ago", tone: "success" },
-  { title: "New client workspace created", detail: "HBS Client Dashboard", time: "1 hour ago", tone: "blue" },
-  { title: "Content updated", detail: "Autotek Mobile Mechanics · Home", time: "Yesterday", tone: "peach" },
-  { title: "Preview deployment ready", detail: "Pollards Fruit & Veg · feature/menu", time: "2 days ago", tone: "lavender" },
-];
+function DashboardSkeleton({ label = "Loading workspace" }: { label?: string }) {
+  return <div className="admin-dashboard-skeleton" aria-busy="true" aria-label={label}><span /><span /><span /><span /></div>;
+}
 
-const fallbackStats: DashboardStats = { activeWebsites: 0, deployments: "—", teamMembers: "—", uptime: "—" };
+function Overview({ websites, activities, stats, crm, loading, onNavigate, onCreate }: { websites: Website[]; activities: Activity[]; stats: DashboardStats; crm: CrmSummary; loading: boolean; onNavigate: (view: AdminView) => void; onCreate: (view: "Pipeline" | "Tasks" | "Websites") => void }) {
+  const [today, setToday] = useState("");
+  const [greeting, setGreeting] = useState("Welcome back");
+  useEffect(() => {
+    const now = new Date();
+    setToday(new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now));
+    const hour = now.getHours();
+    setGreeting(hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
+  }, []);
 
-const navItems: { label: string; icon: IconName }[] = [
-  { label: "Overview", icon: "grid" },
-  { label: "Websites", icon: "globe" },
-  { label: "Pipeline", icon: "activity" },
-  { label: "Clients", icon: "users" },
-  { label: "Tasks", icon: "layers" },
-  { label: "AI Assistant", icon: "activity" },
-  { label: "Integrations", icon: "link" },
-];
+  const overdueTasks = crm.tasks.filter((task) => !task.done && task.due_date && task.due_date < new Date().toISOString().slice(0, 10));
+  const overdueLeads = crm.leads.filter((lead) => lead.next_action_at && new Date(lead.next_action_at).valueOf() < Date.now() && !["Won", "Lost"].includes(lead.status));
+  const attention = [
+    ...overdueTasks.slice(0, 3).map((task) => ({ id: task.id, title: task.title, detail: task.due_date ? `Task overdue since ${shortDate(`${task.due_date}T12:00:00`)}` : "Task overdue", view: "Tasks" as const, tone: "danger" })),
+    ...overdueLeads.slice(0, 3).map((lead) => ({ id: lead.id, title: lead.business_name, detail: lead.next_action || "Follow-up is overdue", view: "Pipeline" as const, tone: "warning" })),
+  ].slice(0, 5);
+
+  if (loading) return <DashboardSkeleton />;
+  return <>
+    <section className="admin-welcome admin-executive-welcome"><div><span className="admin-kicker">{today || "Your business today"}</span><h2>{greeting}, Harley.</h2><p>Your websites, sales pipeline and client work are all in one place.</p></div><div className="admin-welcome-actions"><button className="admin-outline-button" onClick={() => onCreate("Pipeline")}><Icon name="plus" size={15} />Add lead</button><button className="admin-primary-button" onClick={() => onCreate("Websites")}><Icon name="plus" size={15} />New website</button></div></section>
+
+    <section className="admin-stats admin-executive-stats" aria-label="Business overview">
+      <MetricCard icon="globe" tone="peach" label="Live websites" value={stats.activeWebsites} detail={<>{stats.pageViews30d ?? 0} views in 30 days</>} />
+      <MetricCard icon="activity" tone="mint" label="Open pipeline" value={money(crm.metrics.pipelineValue)} detail={<>{crm.metrics.openLeads} active opportunities</>} />
+      <MetricCard icon="briefcase" tone="blue" label="Weighted value" value={money(crm.metrics.weightedValue)} detail="Probability adjusted" />
+      <MetricCard icon="layers" tone="lavender" label="Open work" value={crm.metrics.tasksDue} detail={<>{overdueTasks.length} overdue task{overdueTasks.length === 1 ? "" : "s"}</>} />
+    </section>
+
+    <div className="admin-dashboard-grid">
+      <section className="admin-panel admin-attention-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Priority queue</span><h3>Needs attention</h3></div><span className={`admin-attention-count ${attention.length ? "active" : ""}`}>{attention.length}</span></div>{attention.length ? <div className="admin-attention-list">{attention.map((item) => <button key={`${item.view}-${item.id}`} onClick={() => onNavigate(item.view)}><span className={`admin-attention-icon ${item.tone}`}>!</span><span><strong>{item.title}</strong><small>{item.detail}</small></span><Icon name="arrow-up-right" size={14} /></button>)}</div> : <div className="admin-empty-state compact"><span>✓</span><strong>You&apos;re all caught up</strong><p>No overdue tasks or follow-ups.</p></div>}</section>
+      <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => onCreate("Pipeline")}><span><Icon name="activity" size={17} /></span><strong>Add a new lead</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onCreate("Tasks")}><span><Icon name="layers" size={17} /></span><strong>Create a task</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("Clients")}><span><Icon name="users" size={17} /></span><strong>Open client directory</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("AI Assistant")}><span><Icon name="sparkles" size={17} /></span><strong>Ask HBS AI</strong><Icon name="arrow-up-right" size={14} /></button></div></section>
+    </div>
+
+    <div className="admin-grid lower">
+      <section className="admin-panel admin-websites-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Portfolio</span><h3>Client websites</h3></div><button className="admin-text-button" onClick={() => onNavigate("Websites")}>View all <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-site-list">{websites.length ? websites.slice(0, 5).map((site) => <button className="admin-site-row" key={`${site.name}-${site.domain}`} onClick={() => onNavigate("Websites")}><span className={`admin-site-thumb ${site.color}`}><Icon name="globe" size={17} /></span><span className="admin-site-copy"><strong>{site.name}</strong><small>{site.domain}</small></span><span className={`admin-status ${site.status.toLowerCase()}`}><i />{site.status}</span><span className="admin-site-time">{site.updated}</span><Icon name="arrow-up-right" size={14} /></button>) : <div className="admin-empty-state compact"><strong>No websites connected yet</strong><p>Create your first managed website to begin.</p></div>}</div></section>
+      <section className="admin-panel admin-activity-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Latest changes</span><h3>Recent activity</h3></div><button className="admin-text-button" onClick={() => onNavigate("Tasks")}>View tasks <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-activity-list">{activities.length ? activities.slice(0, 6).map((activity, index) => <div className="admin-activity-row" key={`${activity.title}-${index}`}><span className={`admin-activity-dot ${activity.tone}`} /><span><strong>{activity.title}</strong><small>{activity.detail}</small></span><time>{activity.time}</time></div>) : <div className="admin-empty-state compact"><strong>No recent activity</strong><p>Updates will appear here as work is completed.</p></div>}</div></section>
+    </div>
+
+    <section className="admin-panel admin-service-strip"><div><span className="admin-section-kicker">Infrastructure</span><h3>Connected services</h3></div>{[{ name: "GitHub", mark: "GH" }, { name: "Vercel", mark: "▲" }, { name: "Supabase", mark: "S" }].map((service) => <div className="admin-service-pill" key={service.name}><span>{service.mark}</span><div><strong>{service.name}</strong><small><i />Connected</small></div></div>)}<button className="admin-text-button" onClick={() => onNavigate("Integrations")}>Manage <Icon name="arrow-up-right" size={13} /></button></section>
+  </>;
+}
 
 export default function AdminPage() {
-  const [activeNav, setActiveNav] = useState("Overview");
+  const [activeView, setActiveView] = useState<AdminView>("Overview");
   const [builderStart, setBuilderStart] = useState(0);
   const [builderDirty, setBuilderDirty] = useState(false);
-  function navigate(label: string, startWebsite = false) {
-    if (activeNav === 'Websites' && label !== activeNav && builderDirty && !window.confirm('Leave the builder and discard unsaved changes?')) return;
-    setBuilderDirty(false);
-    if (label === 'Websites') setBuilderStart(startWebsite ? 1 : 0);
-    setActiveNav(label);
-  }
-  const [query, setQuery] = useState("");
-  const [notice, setNotice] = useState("");
-  const [websiteData, setWebsiteData] = useState<Website[]>(fallbackWebsites);
-  const [activityData, setActivityData] = useState<Activity[]>(fallbackActivities);
+  const [createSignal, setCreateSignal] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [stats, setStats] = useState<DashboardStats>(fallbackStats);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const filteredWebsites = useMemo(() => websiteData.filter((site) => `${site.name} ${site.domain} ${site.type}`.toLowerCase().includes(query.toLowerCase())), [query, websiteData]);
+  const [crm, setCrm] = useState<CrmSummary>(fallbackCrm);
+  const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+
+  const navigate = (view: AdminView, startWebsite = false) => {
+    if (activeView === "Websites" && view !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return;
+    setBuilderDirty(false);
+    if (view === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
+    setActiveView(view);
+  };
+
+  const create = (view: "Pipeline" | "Tasks" | "Websites") => {
+    if (view === "Websites") navigate("Websites", true);
+    else { setCreateSignal((value) => value + 1); navigate(view); }
+  };
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/admin/overview")
-      .then(async (response) => {
-        if (!response.ok) return;
-        const data = await response.json();
+    Promise.all([fetch("/api/admin/overview", { cache: "no-store" }), fetch("/api/admin/crm", { cache: "no-store" })])
+      .then(async ([overviewResponse, crmResponse]) => {
+        if (!overviewResponse.ok || !crmResponse.ok) throw new Error("Workspace data could not be loaded.");
+        const [overviewData, crmData] = await Promise.all([overviewResponse.json(), crmResponse.json()]);
         if (!mounted) return;
-        setWebsiteData(data.websites ?? []);
-        setActivityData(data.activities ?? []);
-        setStats(data.stats ?? fallbackStats);
-        setIsConnected(true);
+        setWebsites(overviewData.websites ?? []);
+        setActivities(overviewData.activities ?? []);
+        setStats(overviewData.stats ?? fallbackStats);
+        setCrm(crmData);
+        setConnected(true);
       })
-      .catch(() => undefined)
-      .finally(() => {
-        if (mounted) setIsLoading(false);
-      });
+      .catch(() => { if (mounted) setNotice("Some live workspace data could not be loaded."); })
+      .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
 
-  function showNotice(message: string) {
-    setNotice(message);
-    window.setTimeout(() => setNotice(""), 2400);
-  }
+  const module = useMemo(() => {
+    if (activeView === "Overview") return <Overview websites={websites} activities={activities} stats={stats} crm={crm} loading={loading} onNavigate={navigate} onCreate={create} />;
+    if (activeView === "Websites") return <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} />;
+    if (activeView === "AI Assistant") return <AiPanel />;
+    if (activeView === "Integrations") return <IntegrationsPanel />;
+    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} />;
+  }, [activeView, activities, builderStart, createSignal, crm, loading, stats, websites]);
 
-  return (
-    <main className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand"><span className="admin-brand-mark">H</span><span>hbs admin</span><span className="admin-beta">BETA</span></div>
-        <button className="admin-workspace-select"><span className="admin-workspace-avatar">J</span><span><strong>Jordan&apos;s workspace</strong><small>Personal</small></span><Icon name="chevron-down" size={14} /></button>
-        <div className="admin-nav-label">Workspace</div>
-        <nav className="admin-nav" aria-label="Admin navigation">
-          {navItems.map((item) => <button key={item.label} className={`admin-nav-item ${activeNav === item.label ? "active" : ""}`} onClick={() => navigate(item.label)}><Icon name={item.icon} />{item.label}</button>)}
-        </nav>
-        <div className="admin-sidebar-bottom">
-          <button className="admin-nav-item" onClick={() => showNotice("Settings are coming next")}><Icon name="settings" />Settings</button>
-          <div className="admin-profile"><span className="admin-profile-avatar">JM</span><span><strong>Jordan Miller</strong><small>Super admin</small></span><Icon name="chevron-down" size={14} /></div>
-        </div>
-      </aside>
-
-      <section className="admin-content">
-        <header className="admin-topbar">
-          <div><span className="admin-eyebrow">Workspace / Admin</span><h1>{activeNav}</h1></div>
-          <div className="admin-topbar-actions"><span className="admin-saved"><i />{isConnected ? "Supabase data live" : isLoading ? "Connecting to Supabase…" : "Sign-in required"}</span><button className="admin-outline-button" onClick={() => showNotice("Client dashboard opened in a new tab")}><Icon name="external" size={14} />Client dashboard</button><button className="admin-avatar-button">JM</button></div>
-        </header>
-
-        <div className="admin-main">
-          {activeNav === "Overview" ? <>
-            <section className="admin-welcome"><div><span className="admin-kicker">Tuesday, 25 August 2026</span><h2>Good morning, Jordan.</h2><p>Here&apos;s what&apos;s happening across your websites today.</p></div><button className="admin-primary-button" onClick={() => { navigate("Websites", true); }}><Icon name="plus" size={15} />New website</button></section>
-
-            <section className="admin-stats" aria-label="Workspace statistics">
-              <article className="admin-stat-card"><span className="admin-stat-icon peach"><Icon name="globe" size={17} /></span><span className="admin-stat-label">Active websites</span><strong>{stats.activeWebsites}</strong><small>From the <b>HBS backend</b></small></article>
-              <article className="admin-stat-card"><span className="admin-stat-icon blue"><Icon name="layers" size={17} /></span><span className="admin-stat-label">Deployments</span><strong>{stats.deployments}</strong><small>Provider sync <b>coming next</b></small></article>
-              <article className="admin-stat-card"><span className="admin-stat-icon lavender"><Icon name="users" size={17} /></span><span className="admin-stat-label">Team members</span><strong>{stats.teamMembers}</strong><small>Role sync <b>coming next</b></small></article>
-              <article className="admin-stat-card"><span className="admin-stat-icon mint"><Icon name="activity" size={17} /></span><span className="admin-stat-label">Page views · 30d</span><strong>{isConnected ? stats.pageViews30d ?? 0 : "—"}</strong><small><b>{isConnected ? "Live" : "Awaiting access"}</b> from Supabase</small></article>
-            </section>
-
-            <div className="admin-grid">
-              <section className="admin-panel admin-websites-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Portfolio</span><h3>Websites</h3></div><button className="admin-text-button" onClick={() => navigate("Websites")}>View all <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-search"><Icon name="search" size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search websites..." /></div><div className="admin-site-list">{filteredWebsites.slice(0, 4).map((site) => <button className="admin-site-row" key={site.name} onClick={() => showNotice(`${site.name} selected`)}><span className={`admin-site-thumb ${site.color}`}><Icon name="globe" size={17} /></span><span className="admin-site-copy"><strong>{site.name}</strong><small>{site.domain}</small></span><span className={`admin-status ${site.status.toLowerCase()}`}><i />{site.status}</span><span className="admin-site-time">{site.updated}</span><Icon name="arrow-up-right" size={14} /></button>)}</div></section>
-
-              <section className="admin-panel admin-services-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Infrastructure</span><h3>Connected services</h3></div><button className="admin-icon-button" aria-label="Manage integrations" onClick={() => setActiveNav("Integrations")}><Icon name="arrow-up-right" size={14} /></button></div><div className="admin-service-list"><div className="admin-service-row"><span className="admin-service-logo github">GH</span><span><strong>GitHub</strong><small>tailoredsolutionsuk-cmyk</small></span><span className="admin-connected"><i />Connected</span></div><div className="admin-service-row"><span className="admin-service-logo vercel">▲</span><span><strong>Vercel</strong><small>harleyjayy14&apos;s projects</small></span><span className="admin-connected"><i />Connected</span></div><div className="admin-service-row"><span className="admin-service-logo supabase">⌁</span><span><strong>Supabase</strong><small>Website-Code-HBS</small></span><span className={`admin-connected ${isConnected ? "" : "pending"}`}><i />{isConnected ? "Live data" : "Sign in required"}</span></div></div><div className="admin-service-footer"><span>{isConnected ? "All integrations are healthy" : "Supabase auth is required for live data"}</span><span className="admin-health-dot" /></div></section>
-            </div>
-
-            <div className="admin-grid lower">
-              <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Latest changes</span><h3>Recent activity</h3></div><button className="admin-text-button" onClick={() => navigate("Tasks")}>View in Tasks <Icon name="arrow-up-right" size={13} /></button></div><div className="admin-activity-list">{activityData.map((activity) => <div className="admin-activity-row" key={`${activity.title}-${activity.time}`}><span className={`admin-activity-dot ${activity.tone}`} /><span><strong>{activity.title}</strong><small>{activity.detail}</small></span><time>{activity.time}</time></div>)}</div></section>
-              <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => navigate("Tasks")}><span><Icon name="activity" size={16} /></span><strong>Review task activity</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Team management opened")}><span><Icon name="users" size={16} /></span><strong>Manage team access</strong><Icon name="arrow-up-right" size={13} /></button><button onClick={() => showNotice("Integration settings opened")}><span><Icon name="link" size={16} /></span><strong>Configure integrations</strong><Icon name="arrow-up-right" size={13} /></button></div></section>
-            </div>
-          </> : activeNav === "Websites" ? <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} /> : activeNav === "AI Assistant" ? <AiPanel /> : activeNav === "Integrations" ? <IntegrationsPanel /> : ["Pipeline", "Clients", "Tasks"].includes(activeNav) ? <CrmPanel mode={activeNav as "Pipeline" | "Clients" | "Tasks"} /> : <section className="admin-panel admin-placeholder"><span className="admin-stat-icon blue"><Icon name={navItems.find((item) => item.label === activeNav)?.icon ?? "grid"} size={20} /></span><span className="admin-section-kicker">Admin module</span><h2>{activeNav}</h2><p>This workspace module is ready to connect to Supabase data and live provider actions.</p><button className="admin-primary-button" onClick={() => showNotice(`${activeNav} module queued for build`)}><Icon name="plus" size={15} />Start building</button></section>}
-        </div>
-      </section>
-      {notice && <div className="admin-toast"><span>✓</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div>}
-    </main>
-  );
+  return <AdminShell activeView={activeView} collapsed={collapsed} mobileOpen={mobileOpen} connected={connected} loading={loading} onNavigate={navigate} onToggleCollapsed={() => setCollapsed((value) => !value)} onToggleMobile={() => setMobileOpen((value) => !value)}><div className="admin-main">{module}</div>{notice ? <div className="admin-toast" role="status"><span>!</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div> : null}</AdminShell>;
 }
-
