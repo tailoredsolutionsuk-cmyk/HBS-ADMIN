@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
-import { portalService } from "../../../../lib/portal/server";
+import { portalService, recordPortalLogin } from "../../../../lib/portal/server";
 import { isValidPortalOtp, normalisePortalEmail } from "../../../../lib/portal/validation";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,12 @@ export async function POST(request: NextRequest) {
   if (allowed.error || !allowed.data) {
     await auth.auth.signOut();
     return NextResponse.json({ error: "Portal access has not been enabled for this account." }, { status: 403 });
+  }
+  try {
+    await recordPortalLogin(data.user.id, allowed.data.id, email);
+  } catch {
+    await auth.auth.signOut();
+    return NextResponse.json({ error: "Your code was accepted, but the login could not be recorded. Please request a new code." }, { status: 500 });
   }
   return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
 }

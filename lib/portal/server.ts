@@ -10,6 +10,12 @@ export function portalService() {
   });
 }
 
+export async function recordPortalLogin(userId: string, clientId: string, email: string) {
+  const db = portalService();
+  const result = await db.rpc("record_client_portal_login", { p_user_id: userId, p_client_id: clientId, p_email: email, p_event_id: crypto.randomUUID() });
+  if (result.error) throw new Error("PORTAL_LOGIN_RECORD_FAILED");
+}
+
 export async function portalAccount() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const auth = await createClient();
