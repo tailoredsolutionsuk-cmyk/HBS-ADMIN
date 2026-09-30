@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const source = await db.from("project_activity_sources").select("project_name,client_id").eq("provider", "github").eq("external_key", push.fullName).eq("enabled", true).maybeSingle();
     if (source.error) throw new Error("SOURCE_LOOKUP_FAILED");
     if (!source.data) return NextResponse.json({ ok: true, ignored: true });
-    const metadata = { repository: push.fullName, branch: push.branch, commitCount: push.commitCount, files: push.files, summaryType: "commit" };
+    const metadata = { repository: push.fullName, branch: push.branch, commitCount: push.commitCount, files: push.files, summaryType: "automatic" };
     const saved = await db.from("project_activity_events").upsert({
       source: "github",
       external_id: `push:${push.sha}`,
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       metadata,
     }, { onConflict: "source,external_id" });
     if (saved.error) throw new Error("ACTIVITY_SAVE_FAILED");
-    after(async () => {
+    if (process.env.GITHUB_ACTIVITY_AI_SUMMARIES === "true") after(async () => {
       try {
         const summary = await generateGithubActivitySummary(push);
         const update = await portalService().from("project_activity_events").update({ summary, metadata: { ...metadata, summaryType: "ai" } }).eq("source", "github").eq("external_id", `push:${push.sha}`);

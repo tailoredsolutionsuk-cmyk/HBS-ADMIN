@@ -19,7 +19,7 @@ test("normalises a GitHub push without accepting conversation or source content"
   assert.equal(push.branch, "main");
   assert.equal(push.commitCount, 1);
   assert.deepEqual(push.files, [{ path: "app/metrics/page.tsx", status: "added" }, { path: "app/portal/page.tsx", status: "modified" }, { path: "app/old.tsx", status: "removed" }]);
-  assert.equal(githubFallbackSummary(push), "Update client metrics. 1 commit changed 3 files (1 added, 1 modified, 1 removed).");
+  assert.equal(githubFallbackSummary(push), "Update client metrics. Areas affected: website application, client portal. 1 commit changed 3 files (1 added, 1 modified, 1 removed).");
   assert.equal("prompt" in push, false);
   assert.equal(JSON.stringify(githubSummaryInput(push)).includes("private source"), false);
 });

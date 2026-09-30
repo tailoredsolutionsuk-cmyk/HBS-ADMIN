@@ -63,5 +63,18 @@ export function githubFallbackSummary(push: GithubPush) {
   if (!push.files.length) return push.summary;
   const counts = push.files.reduce((total, file) => ({ ...total, [file.status]: total[file.status] + 1 }), { added: 0, modified: 0, removed: 0 });
   const parts = (["added", "modified", "removed"] as const).filter((status) => counts[status]).map((status) => `${counts[status]} ${status}`);
-  return `${push.summary}. ${push.commitCount} commit${push.commitCount === 1 ? "" : "s"} changed ${push.files.length} file${push.files.length === 1 ? "" : "s"} (${parts.join(", ")}).`.slice(0, 1000);
+  const areas = new Set<string>();
+  for (const { path } of push.files) {
+    if (/^(app\/admin|components\/admin)/.test(path)) areas.add("admin CRM");
+    else if (/^(app\/portal|app\/api\/portal|lib\/portal)/.test(path)) areas.add("client portal");
+    else if (/^(app\/api\/integrations|lib\/activity)/.test(path)) areas.add("integrations and activity tracking");
+    else if (/analytics/i.test(path)) areas.add("website analytics");
+    else if (/^(db|supabase|migrations)\//.test(path)) areas.add("database");
+    else if (/^(tests?|__tests__)\//.test(path)) areas.add("automated tests");
+    else if (/^(docs?|README)/i.test(path)) areas.add("documentation");
+    else if (/^(app|pages|components)\//.test(path)) areas.add("website application");
+  }
+  const messages = Array.from(new Set(push.commitMessages)).slice(0, 3).join("; ");
+  const areaSummary = areas.size ? ` Areas affected: ${Array.from(areas).join(", ")}.` : "";
+  return `${messages || push.summary}.${areaSummary} ${push.commitCount} commit${push.commitCount === 1 ? "" : "s"} changed ${push.files.length} file${push.files.length === 1 ? "" : "s"} (${parts.join(", ")}).`.replace(/\.\./g, ".").slice(0, 1000);
 }
