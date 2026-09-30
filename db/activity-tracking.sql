@@ -26,6 +26,31 @@ grant select, insert, update, delete on public.project_activity_events to servic
 create policy "Service role manages project activity" on public.project_activity_events
   for all to service_role using (true) with check (true);
 
+create table public.project_activity_sources (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null check (provider in ('github','vercel')),
+  external_key text not null check (external_key = lower(external_key) and char_length(external_key) between 3 and 240),
+  project_name text not null check (char_length(project_name) between 1 and 160),
+  client_id text references public.clients(id) on delete set null,
+  enabled boolean not null default true,
+  webhook_id bigint,
+  last_verified_at timestamptz,
+  last_error text check (last_error is null or char_length(last_error) <= 1000),
+  created_at timestamptz not null default now(),
+  unique(provider, external_key)
+);
+alter table public.project_activity_sources enable row level security;
+revoke all on public.project_activity_sources from public, anon, authenticated;
+grant select, insert, update, delete on public.project_activity_sources to service_role;
+create policy "Service role manages project activity sources" on public.project_activity_sources
+  for all to service_role using (true) with check (true);
+
+insert into public.project_activity_sources(provider, external_key, project_name, client_id)
+values
+  ('github', 'tailoredsolutionsuk-cmyk/hbs-admin', 'HBS Admin', null),
+  ('github', 'tailoredsolutionsuk-cmyk/utx', 'UTX', 'utx')
+on conflict(provider, external_key) do update set project_name=excluded.project_name, client_id=excluded.client_id, enabled=true;
+
 alter table public.client_portal_users
   add column last_login_at timestamptz,
   add column login_count integer not null default 0 check (login_count >= 0);

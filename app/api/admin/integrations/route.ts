@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
+import { portalService } from "../../../../lib/portal/server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: "ADMIN_ACCESS_REQUIRED" }, { status: 403 });
 
   const fullAccess = ["owner", "admin"].includes(admin.role);
+  const activitySources = fullAccess
+    ? await portalService().from("project_activity_sources").select("project_name,enabled,webhook_id,last_verified_at,last_error").eq("provider", "github").order("project_name")
+    : { data: [], error: null };
   return NextResponse.json({
     role: admin.role,
     scopes: {
@@ -31,6 +35,11 @@ export async function GET() {
       { id: "make", name: "Make", configured: Boolean(process.env.MAKE_API_TOKEN && process.env.MAKE_TEAM_ID), detail: "Business automations" },
       { id: "ai", name: "AI Gateway", configured: Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN), detail: process.env.AI_MODEL || "openai/gpt-5.4-mini" },
     ],
+    activityAutomation: {
+      canManage: fullAccess,
+      configured: Boolean(process.env.GITHUB_TOKEN && process.env.CRON_SECRET && activitySources.data?.length && activitySources.data.every((source) => source.webhook_id && !source.last_error)),
+      sources: activitySources.data ?? [],
+    },
   });
 }
 
