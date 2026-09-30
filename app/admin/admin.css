@@ -148,6 +148,8 @@ button { color: inherit; }
 .admin-site-time, .admin-activity-row time { color: var(--hbs-faint); font-size: 9px; text-align: right; }
 .admin-site-row > svg { color: var(--hbs-faint); }
 .admin-activity-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 12px 2px; border-top: 1px solid #ecece6; }
+.admin-project-activity .admin-activity-row { align-items: start; }
+.admin-project-activity .admin-activity-row strong { white-space: normal; line-height: 1.45; }
 .admin-activity-dot { width: 9px; height: 9px; border-radius: 50%; background: #9dbab0; box-shadow: 0 0 0 4px #edf3ef; }
 .admin-activity-dot.peach { background: #d99878; box-shadow: 0 0 0 4px var(--hbs-peach-soft); }.admin-activity-dot.blue { background: #71999d; box-shadow: 0 0 0 4px var(--hbs-blue); }.admin-activity-dot.lavender { background: #8d7fa0; box-shadow: 0 0 0 4px var(--hbs-lavender); }.admin-activity-dot.success, .admin-activity-dot.mint { background: #5c9c70; box-shadow: 0 0 0 4px var(--hbs-sage); }
 .admin-service-strip { display: flex; align-items: center; gap: 24px; margin-top: 16px; }
