@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 
-export type AdminView = "Overview" | "Websites" | "Pipeline" | "Clients" | "Onboarding" | "Tasks" | "Metrics" | "AI Assistant" | "Integrations";
+export type AdminView = "Overview" | "Websites" | "Pipeline" | "Lead Finder" | "Clients" | "Onboarding" | "Tasks" | "Metrics" | "AI Assistant" | "Integrations";
 export type IconName = "activity" | "arrow-up-right" | "briefcase" | "chart" | "chevron-down" | "chevron-left" | "external" | "globe" | "grid" | "layers" | "link" | "menu" | "plus" | "search" | "settings" | "sparkles" | "users" | "x";
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
@@ -32,7 +32,7 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 const navigation: { label: string; items: { label: AdminView; icon: IconName }[] }[] = [
   { label: "Workspace", items: [{ label: "Overview", icon: "grid" }, { label: "Websites", icon: "globe" }] },
-  { label: "CRM", items: [{ label: "Pipeline", icon: "activity" }, { label: "Clients", icon: "users" }, { label: "Onboarding", icon: "briefcase" }, { label: "Tasks", icon: "layers" }, { label: "Metrics", icon: "chart" }] },
+  { label: "CRM", items: [{ label: "Pipeline", icon: "activity" }, { label: "Lead Finder", icon: "search" }, { label: "Clients", icon: "users" }, { label: "Onboarding", icon: "briefcase" }, { label: "Tasks", icon: "layers" }, { label: "Metrics", icon: "chart" }] },
   { label: "Tools", items: [{ label: "AI Assistant", icon: "sparkles" }, { label: "Integrations", icon: "link" }] },
 ];
 

@@ -11,6 +11,7 @@ import type { MetricsCrmData } from "./metrics-panel";
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 const OnboardingPanel = dynamic(() => import("./onboarding-panel"), { loading: () => <DashboardSkeleton label="Opening onboarding" /> });
 const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
+const LeadFinderPanel = dynamic(() => import("./lead-finder-panel"), { loading: () => <DashboardSkeleton label="Opening Lead Finder" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
@@ -121,6 +122,7 @@ export default function AdminPage() {
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Onboarding") return <OnboardingPanel initialClientId={onboardingClient} />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
+    if (activeView === "Lead Finder") return <LeadFinderPanel onOpenPipeline={() => navigate("Pipeline")} />;
     return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} onStartProject={(clientId) => { setOnboardingClient(clientId); navigate("Onboarding"); }} />;
   })();
 
