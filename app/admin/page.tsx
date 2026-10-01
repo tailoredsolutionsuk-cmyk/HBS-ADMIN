@@ -6,21 +6,19 @@ import AiPanel from "./ai-panel";
 import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
 import CrmPanel from "./crm-panel";
 import IntegrationsPanel from "./integrations-panel";
+import type { MetricsCrmData } from "./metrics-panel";
 
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 const OnboardingPanel = dynamic(() => import("./onboarding-panel"), { loading: () => <DashboardSkeleton label="Opening onboarding" /> });
+const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
 type DashboardStats = { activeWebsites: number | string; deployments: number | string; teamMembers: number | string; uptime: string; pageViews30d?: number };
-type CrmSummary = {
-  leads: { id: string; business_name: string; next_action: string | null; next_action_at: string | null; status: string }[];
-  tasks: { id: string; title: string; due_date: string | null; done: boolean; priority: string }[];
-  metrics: { clients: number; openLeads: number; pipelineValue: number; weightedValue: number; overdueFollowUps: number; tasksDue: number };
-};
+type CrmData = MetricsCrmData;
 
 const fallbackStats: DashboardStats = { activeWebsites: 0, deployments: "—", teamMembers: "—", uptime: "—", pageViews30d: 0 };
-const fallbackCrm: CrmSummary = { leads: [], tasks: [], metrics: { clients: 0, openLeads: 0, pipelineValue: 0, weightedValue: 0, overdueFollowUps: 0, tasksDue: 0 } };
+const fallbackCrm: CrmData = { clients: [], clientAnalytics: [], leads: [], tasks: [], portalUsers: [], projectActivities: [], metrics: { clients: 0, openLeads: 0, pipelineValue: 0, weightedValue: 0, overdueFollowUps: 0, tasksDue: 0 } };
 const money = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
 const shortDate = (value: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(value));
 
@@ -28,7 +26,7 @@ function DashboardSkeleton({ label = "Loading workspace" }: { label?: string }) 
   return <div className="admin-dashboard-skeleton" aria-busy="true" aria-label={label}><span /><span /><span /><span /></div>;
 }
 
-function Overview({ websites, activities, stats, crm, loading, onNavigate, onCreate }: { websites: Website[]; activities: Activity[]; stats: DashboardStats; crm: CrmSummary; loading: boolean; onNavigate: (view: AdminView) => void; onCreate: (view: "Pipeline" | "Tasks" | "Websites") => void }) {
+function Overview({ websites, activities, stats, crm, loading, onNavigate, onCreate }: { websites: Website[]; activities: Activity[]; stats: DashboardStats; crm: CrmData; loading: boolean; onNavigate: (view: AdminView) => void; onCreate: (view: "Pipeline" | "Tasks" | "Websites") => void }) {
   const [today, setToday] = useState("");
   const [greeting, setGreeting] = useState("Welcome back");
   useEffect(() => {
@@ -81,7 +79,7 @@ export default function AdminPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [stats, setStats] = useState<DashboardStats>(fallbackStats);
-  const [crm, setCrm] = useState<CrmSummary>(fallbackCrm);
+  const [crm, setCrm] = useState<CrmData>(fallbackCrm);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -122,6 +120,7 @@ export default function AdminPage() {
     if (activeView === "AI Assistant") return <AiPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Onboarding") return <OnboardingPanel initialClientId={onboardingClient} />;
+    if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
     return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} onStartProject={(clientId) => { setOnboardingClient(clientId); navigate("Onboarding"); }} />;
   })();
 

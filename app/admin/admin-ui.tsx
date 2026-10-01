@@ -2,8 +2,8 @@
 
 import { ReactNode, useEffect } from "react";
 
-export type AdminView = "Overview" | "Websites" | "Pipeline" | "Clients" | "Onboarding" | "Tasks" | "AI Assistant" | "Integrations";
-export type IconName = "activity" | "arrow-up-right" | "briefcase" | "chevron-down" | "chevron-left" | "external" | "globe" | "grid" | "layers" | "link" | "menu" | "plus" | "search" | "settings" | "sparkles" | "users" | "x";
+export type AdminView = "Overview" | "Websites" | "Pipeline" | "Clients" | "Onboarding" | "Tasks" | "Metrics" | "AI Assistant" | "Integrations";
+export type IconName = "activity" | "arrow-up-right" | "briefcase" | "chart" | "chevron-down" | "chevron-left" | "external" | "globe" | "grid" | "layers" | "link" | "menu" | "plus" | "search" | "settings" | "sparkles" | "users" | "x";
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
@@ -11,6 +11,7 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     activity: <><path d="M3 12h4l2.2-6 4.4 12 2.2-6H21" /></>,
     "arrow-up-right": <><path d="M7 17 17 7" /><path d="M7 7h10v10" /></>,
     briefcase: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></>,
+    chart: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>,
     "chevron-down": <path d="m6 9 6 6 6-6" />,
     "chevron-left": <path d="m15 18-6-6 6-6" />,
     external: <><path d="M14 3h7v7" /><path d="M10 14 21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></>,
@@ -31,7 +32,7 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 const navigation: { label: string; items: { label: AdminView; icon: IconName }[] }[] = [
   { label: "Workspace", items: [{ label: "Overview", icon: "grid" }, { label: "Websites", icon: "globe" }] },
-  { label: "CRM", items: [{ label: "Pipeline", icon: "activity" }, { label: "Clients", icon: "users" }, { label: "Onboarding", icon: "briefcase" }, { label: "Tasks", icon: "layers" }] },
+  { label: "CRM", items: [{ label: "Pipeline", icon: "activity" }, { label: "Clients", icon: "users" }, { label: "Onboarding", icon: "briefcase" }, { label: "Tasks", icon: "layers" }, { label: "Metrics", icon: "chart" }] },
   { label: "Tools", items: [{ label: "AI Assistant", icon: "sparkles" }, { label: "Integrations", icon: "link" }] },
 ];
 
