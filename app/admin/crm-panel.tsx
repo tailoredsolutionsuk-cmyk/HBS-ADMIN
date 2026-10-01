@@ -66,6 +66,8 @@ export default function CrmPanel({ mode, startCreate = 0, onStartProject }: { mo
   const [taskView, setTaskView] = useState("open");
   const [taskPriority, setTaskPriority] = useState("all");
   const [taskClient, setTaskClient] = useState("all");
+  const [taskDoneDrafts, setTaskDoneDrafts] = useState<Record<string, boolean>>({});
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null);
   const [portalClient, setPortalClient] = useState<Client | null>(null);
   const [portalEmail, setPortalEmail] = useState("");
 
@@ -112,6 +114,18 @@ export default function CrmPanel({ mode, startCreate = 0, onStartProject }: { mo
     if (!window.confirm(`Delete “${task.title}”? This cannot be undone.`)) return;
     setError("");
     try { await request("DELETE", { entity: "task", id: task.id }); } catch (issue) { setError(issue instanceof Error ? issue.message : "The task could not be deleted."); }
+  }
+
+  async function confirmTaskDone(task: Task) {
+    const done = taskDoneDrafts[task.id] ?? task.done;
+    if (done === task.done) return;
+    setConfirmingTaskId(task.id); setError("");
+    try {
+      await request("PATCH", { entity: "task", id: task.id, done });
+      setTaskDoneDrafts((drafts) => { const next = { ...drafts }; delete next[task.id]; return next; });
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "The task could not be updated.");
+    } finally { setConfirmingTaskId(null); }
   }
 
   async function saveLead(event: FormEvent<HTMLFormElement>, lead: Lead) {
@@ -244,10 +258,12 @@ export default function CrmPanel({ mode, startCreate = 0, onStartProject }: { mo
         </div>
         <div className="admin-task-list">{taskGroups.length ? taskGroups.map((group) => <section className="admin-task-group" key={group.id} aria-labelledby={`task-group-${group.id}`}><header><span className="admin-task-group-mark">{group.id === "internal" ? "H" : group.name.slice(0, 1).toUpperCase()}</span><div><h3 id={`task-group-${group.id}`}>{group.name}</h3><small>{group.tasks.filter((task) => !task.done).length} open · {group.tasks.length} total</small></div></header>{group.tasks.map((task) => {
           const overdue = !task.done && Boolean(task.due_date) && task.due_date! < taskToday;
+          const checked = taskDoneDrafts[task.id] ?? task.done;
+          const needsConfirmation = checked !== task.done;
           return <article className={`admin-task-row ${task.done ? "done" : ""} ${overdue ? "overdue" : ""}`} key={task.id}>
-            <label className="admin-task-check" aria-label={task.done ? `Reopen ${task.title}` : `Complete ${task.title}`}><input type="checkbox" checked={task.done} disabled={!data.permissions.canEdit} onChange={(event) => update("task", task.id, { done: event.target.checked })} /><span /></label>
+            <label className="admin-task-check" aria-label={task.done ? `Select ${task.title} to reopen` : `Select ${task.title} as complete`}><input type="checkbox" checked={checked} disabled={!data.permissions.canEdit || confirmingTaskId === task.id} onChange={(event) => setTaskDoneDrafts((drafts) => ({ ...drafts, [task.id]: event.target.checked }))} /><span /></label>
             <div className="admin-task-copy"><div><span className={`admin-task-priority priority-${task.priority}`}>{task.priority}</span><span className="admin-task-category">{task.category}</span></div><strong>{task.title}</strong>{task.notes && <small>{task.notes}</small>}</div>
-            <div className="admin-task-actions"><time className={overdue ? "overdue" : ""}>{task.due_date ? `${overdue ? "Overdue · " : ""}${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(`${task.due_date}T12:00:00`))}` : "No due date"}</time>{data.permissions.canEdit && <select className="admin-task-client-select" aria-label={`Client for ${task.title}`} value={task.client_id || ""} onChange={(event) => update("task", task.id, { clientId: event.target.value })}><option value="">HBS internal</option>{data.clients.map((client) => <option key={client.id} value={client.id}>{client.business_name}</option>)}</select>}{data.permissions.canEdit && <select aria-label={`Status for ${task.title}`} value={task.status} onChange={(event) => update("task", task.id, { status: event.target.value })}>{taskStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select>}{data.permissions.canEdit && <button className="admin-task-delete" type="button" onClick={() => deleteTask(task)} aria-label={`Delete ${task.title}`}>×</button>}</div>
+            <div className="admin-task-actions"><time className={overdue ? "overdue" : ""}>{task.due_date ? `${overdue ? "Overdue · " : ""}${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(`${task.due_date}T12:00:00`))}` : "No due date"}</time>{needsConfirmation && <button className="admin-task-confirm" type="button" disabled={confirmingTaskId === task.id} onClick={() => confirmTaskDone(task)} aria-label={checked ? `Confirm ${task.title} is complete` : `Confirm ${task.title} is reopened`}>{confirmingTaskId === task.id ? "Saving…" : checked ? "✓ Confirm done" : "✓ Confirm reopen"}</button>}{data.permissions.canEdit && <select className="admin-task-client-select" aria-label={`Client for ${task.title}`} value={task.client_id || ""} onChange={(event) => update("task", task.id, { clientId: event.target.value })}><option value="">HBS internal</option>{data.clients.map((client) => <option key={client.id} value={client.id}>{client.business_name}</option>)}</select>}{data.permissions.canEdit && <select aria-label={`Status for ${task.title}`} value={task.status} disabled={needsConfirmation} onChange={(event) => update("task", task.id, { status: event.target.value })}>{(task.done ? taskStatuses : taskStatuses.filter((status) => status.value !== "done")).map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select>}{data.permissions.canEdit && <button className="admin-task-delete" type="button" onClick={() => deleteTask(task)} aria-label={`Delete ${task.title}`}>×</button>}</div>
           </article>;
         })}</section>) : <div className="admin-task-empty"><strong>Nothing in this view</strong><span>{taskView === "done" ? "Completed work will appear here." : "Create a task or change the filters to see more work."}</span></div>}</div>
       </section>
