@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../lib/supabase/server";
 import { portalService } from "../../../../lib/portal/server";
-import { defaultProfile, isDuplicateProspect, normaliseProspect, parseProfile, type IdealCustomerProfile, type Prospect } from "../../../../lib/leads/ideal-customer";
+import { defaultProfile, isDuplicateProspect, normaliseProspect, parseProfile, websiteHost, type IdealCustomerProfile, type Prospect } from "../../../../lib/leads/ideal-customer";
+import { isBlockedSource, normaliseWebsiteResults } from "../../../../lib/leads/chrome-import";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,8 @@ async function existingBusinesses() {
 function candidateFromBody(value: unknown, profile: IdealCustomerProfile): Prospect | null {
   if (!value || typeof value !== "object") return null;
   const candidate = value as Record<string, unknown>;
-  const source = candidate.source === "Brave Place Search" ? "Brave Place Search" : "Manual review";
+  const source = candidate.source === "Brave Place Search" ? "Brave Place Search" : candidate.source === "Chrome CSV import" ? "Chrome CSV import" : "Manual review";
+  if (source === "Chrome CSV import" && (typeof candidate.sourceUrl !== "string" || isBlockedSource(candidate.sourceUrl))) return null;
   return normaliseProspect({
     title: candidate.name,
     url: candidate.website,
@@ -54,7 +56,7 @@ export async function GET() {
   if ("error" in context) return context.error;
   const profile = await savedProfile();
   if (!profile) return message("PROFILE_UNAVAILABLE", 503);
-  return NextResponse.json({ profile, searchConfigured: Boolean(process.env.BRAVE_SEARCH_API_KEY), canEdit: editableRoles.has(context.admin.role) });
+  return NextResponse.json({ profile, searchConfigured: Boolean(process.env.BRAVE_SEARCH_API_KEY), serpApiConfigured: Boolean(process.env.SERPAPI_API_KEY), canEdit: editableRoles.has(context.admin.role) });
 }
 
 export async function POST(request: Request) {
@@ -78,6 +80,24 @@ export async function POST(request: Request) {
   const profile = await savedProfile();
   if (!profile) return message("PROFILE_UNAVAILABLE", 503);
 
+  if (action === "website_research") {
+    if (!profile.location) return message("LOCATION_REQUIRED", 400);
+    const token = process.env.SERPAPI_API_KEY;
+    if (!token) return message("SERPAPI_NOT_CONFIGURED", 503);
+    const params = new URLSearchParams({ engine: "google", q: `${profile.sector} ${profile.location} UK official website -site:facebook.com -site:instagram.com -site:google.com/maps`, google_domain: "google.co.uk", gl: "uk", hl: "en", num: "10", api_key: token });
+    let data: { organic_results?: unknown; error?: unknown };
+    try {
+      const response = await fetch(`https://serpapi.com/search.json?${params}`, { cache: "no-store", signal: AbortSignal.timeout(12000) });
+      if (!response.ok) return message(response.status === 429 ? "SEARCH_LIMIT_REACHED" : "SEARCH_PROVIDER_FAILED", 502);
+      data = await response.json();
+    } catch { return message("SEARCH_PROVIDER_UNAVAILABLE", 502); }
+    if (data.error) return message("SEARCH_PROVIDER_FAILED", 502);
+    const existing = await existingBusinesses();
+    if (!existing) return message("DUPLICATE_CHECK_FAILED", 500);
+    const hosts = new Set([...existing.leads.map((lead) => lead.website_url || ""), ...existing.clients.flatMap((client) => [client.website || "", client.domain || ""])].map(websiteHost).filter(Boolean));
+    return NextResponse.json({ websites: normaliseWebsiteResults(data.organic_results).map((item) => ({ ...item, alreadyInCrm: hosts.has(websiteHost(item.website)) })) });
+  }
+
   if (action === "search") {
     if (!profile.location) return message("LOCATION_REQUIRED", 400);
     const token = process.env.BRAVE_SEARCH_API_KEY;
@@ -98,6 +118,7 @@ export async function POST(request: Request) {
   }
 
   if (action === "review" || action === "save_lead") {
+    if (body.candidate?.source === "Chrome CSV import" && isBlockedSource(body.candidate?.sourceUrl)) return message("SOURCE_NOT_PERMITTED", 400);
     const prospect = candidateFromBody(body.candidate, profile);
     if (!prospect) return message("INVALID_PROSPECT", 400);
     const existing = await existingBusinesses();
@@ -106,7 +127,7 @@ export async function POST(request: Request) {
     if (action === "review") return NextResponse.json({ prospect });
     if (prospect.duplicate) return message("PROSPECT_ALREADY_EXISTS", 409);
 
-    const notes = [`Lead Finder profile match: ${prospect.score}/100`, ...prospect.reasons, prospect.sourceUrl ? `Listing source: ${prospect.sourceUrl}` : "Manual business review", "Verify public information before outreach."].join("\n");
+    const notes = [`Lead Finder profile match: ${prospect.score}/100`, `Captured via: ${prospect.source}`, ...prospect.reasons, prospect.sourceUrl ? `Listing source: ${prospect.sourceUrl}` : "Manual business review", "Verify public information before outreach."].join("\n");
     const saved = await context.supabase.from("leads").insert({
       business_name: prospect.name,
       name: prospect.name,

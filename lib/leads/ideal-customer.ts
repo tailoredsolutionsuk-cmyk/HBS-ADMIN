@@ -14,7 +14,7 @@ export type Prospect = {
   email: string;
   phone: string;
   sourceUrl: string;
-  source: "Brave Place Search" | "Manual review";
+  source: "Brave Place Search" | "Manual review" | "Chrome CSV import";
   score: number;
   reasons: string[];
   duplicate: boolean;
