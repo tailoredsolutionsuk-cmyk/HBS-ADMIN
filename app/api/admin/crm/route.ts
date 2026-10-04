@@ -142,10 +142,16 @@ export async function POST(request: Request) {
   } else if (entity === "task") {
     const title = clean(body.title, 300);
     if (!title) return NextResponse.json({ error: "TASK_TITLE_REQUIRED" }, { status: 400 });
+    const clientId = clean(body.clientId, 200) || null;
+    if (clientId) {
+      const client = await supabase.from("clients").select("id").eq("id", clientId).eq("archived", false).maybeSingle();
+      if (client.error) return NextResponse.json({ error: "CLIENT_LOOKUP_FAILED" }, { status: 500 });
+      if (!client.data) return NextResponse.json({ error: "CLIENT_NOT_FOUND", detail: "Choose an active client for this task." }, { status: 400 });
+    }
     const id = `task-${crypto.randomUUID()}`;
     const status = taskStatuses.has(clean(body.status, 30)) ? clean(body.status, 30) : "todo";
     const priority = taskPriorities.has(clean(body.priority, 20)) ? clean(body.priority, 20) : "medium";
-    result = await supabase.from("checklist_items").insert({ id, title, client_id: clean(body.clientId, 200) || null, notes: clean(body.notes, 2000) || null, due_date: clean(body.dueDate, 10) || null, category: clean(body.category, 80) || "General", priority, status, done: status === "done", assigned_to: userId, completed_at: status === "done" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).select().single();
+    result = await supabase.from("checklist_items").insert({ id, title, client_id: clientId, notes: clean(body.notes, 2000) || null, due_date: clean(body.dueDate, 10) || null, category: clean(body.category, 80) || "General", priority, status, done: status === "done", assigned_to: userId, completed_at: status === "done" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).select().single();
     activityId = id;
     detail = `Task created: ${title}`;
   } else if (entity === "note") {

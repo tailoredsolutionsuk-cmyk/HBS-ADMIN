@@ -190,6 +190,9 @@ button { color: inherit; }
 .admin-crm-form input, .admin-crm-form select, .admin-crm-form textarea, .admin-lead-card select, .admin-pipeline-toolbar select, .admin-task-toolbar select, .admin-task-actions select, .admin-lead-detail-form input, .admin-lead-detail-form select, .admin-lead-detail-form textarea, .admin-note-form textarea, .admin-ai-composer textarea { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid var(--hbs-border-strong); border-radius: 8px; outline: none; background: #fff; color: var(--hbs-ink); }
 .admin-crm-form textarea, .admin-lead-detail-form textarea, .admin-note-form textarea, .admin-ai-composer textarea { resize: vertical; }
 .admin-crm-form > .admin-primary-button { justify-self: start; }
+.admin-task-quick-form { grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr); }
+.admin-task-quick-help { grid-column: 1 / -1; margin: -4px 0 0; color: var(--hbs-muted); font-size: 12px; line-height: 1.5; }
+.admin-task-notice { padding: 12px 15px; border: 1px solid #a9c5ad; border-radius: 9px; background: #edf5ee; color: var(--hbs-success); font-size: 12px; font-weight: 700; }
 .admin-search { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid var(--hbs-border-strong); border-radius: 9px; background: #fff; color: var(--hbs-faint); }
 .admin-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--hbs-ink); font-size: 11px; }
 
@@ -242,6 +245,7 @@ button { color: inherit; }
 .admin-lead-links a { display: inline-flex; align-items: center; gap: 5px; color: var(--hbs-leaf); font-size: 11px; font-weight: 700; }
 @media (max-width: 700px) { .admin-lead-intro { display: grid; }.admin-lead-intro > button { justify-self: start; }.admin-lead-fields { grid-template-columns: 1fr; }.admin-lead-fields .admin-lead-wide { grid-column: auto; }.admin-lead-review-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .admin-lead-csv-row { align-items: flex-start; flex-direction: column; }.admin-lead-csv-row .admin-outline-button { align-self: flex-start; } }
+@media (max-width: 700px) { .admin-task-quick-form { grid-template-columns: 1fr; } }
 .admin-pipeline-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) auto auto; align-items: end; gap: 12px; }
 .admin-pipeline-toolbar select { min-width: 145px; }
 .admin-pipeline { display: grid; grid-template-columns: repeat(6, minmax(235px, 1fr)); gap: 12px; padding: 2px 0 12px; overflow-x: auto; scrollbar-color: #bdc9bf transparent; }
