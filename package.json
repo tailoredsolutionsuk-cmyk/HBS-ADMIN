@@ -17,7 +17,9 @@
     "ai": "7.0.68",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.0.0"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -26,4 +28,3 @@
     "typescript": "latest"
   }
 }
-
