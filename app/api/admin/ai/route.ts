@@ -1,5 +1,6 @@
 import { APICallError, generateText } from "ai";
 import { NextResponse } from "next/server";
+import { getAiGatewayModel } from "../../../../lib/ai/gateway";
 import { createClient } from "../../../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -8,8 +9,6 @@ export const maxDuration = 60;
 function text(value: unknown, max = 2500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
-
-const DEFAULT_AI_MODEL = "openai/gpt-5.4-mini";
 
 function gatewayErrorDetails(error: unknown) {
   if (!(error instanceof Error)) return { statusCode: undefined, message: undefined };
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
   const message = text(body.message);
   if (!message) return NextResponse.json({ error: "MESSAGE_REQUIRED" }, { status: 400 });
 
-  const model = process.env.AI_MODEL || DEFAULT_AI_MODEL;
+  const model = getAiGatewayModel();
 
   try {
     const result = await generateText({

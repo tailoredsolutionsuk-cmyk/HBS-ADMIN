@@ -22,7 +22,10 @@ export default function IntegrationsPanel() {
       setMessage("GitHub activity tracking is active for every connected project.");
       const refreshed = await fetch("/api/admin/integrations", { cache: "no-store" });
       if (refreshed.ok) setData(await refreshed.json());
-    } catch (issue) { setError(issue instanceof Error ? issue.message : "Activity tracking could not be activated."); }
+    } catch (issue) {
+      const message = issue instanceof Error ? issue.message : "Activity tracking could not be activated.";
+      setError(message.startsWith("GITHUB_TOKEN_UNAUTHORIZED") ? "GitHub rejected the saved GITHUB_TOKEN. Replace it in Vercel with a current token that has Webhooks read and write access to every tracked repository." : message.startsWith("GITHUB_WEBHOOK_FORBIDDEN") ? "The saved GitHub token is valid but lacks Webhooks read and write access to a tracked repository." : message);
+    }
     finally { setSaving(false); }
   }
 

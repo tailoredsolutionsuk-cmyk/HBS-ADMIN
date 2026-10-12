@@ -27,6 +27,18 @@ function clean(value: unknown, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+function websiteDetails(value: unknown): { website: string | null; domain: string | null } | null {
+  const raw = clean(value, 2000);
+  if (!raw) return { website: null, domain: null };
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return null;
+    return { website: url.toString(), domain: url.hostname.toLowerCase() };
+  } catch {
+    return null;
+  }
+}
+
 function optionalDate(value: unknown) {
   const date = clean(value, 40);
   if (!date) return null;
@@ -127,6 +139,8 @@ export async function POST(request: Request) {
   } else if (entity === "client") {
     const businessName = clean(body.businessName, 200);
     if (!businessName) return NextResponse.json({ error: "BUSINESS_NAME_REQUIRED" }, { status: 400 });
+    const website = websiteDetails(body.website);
+    if (!website) return NextResponse.json({ error: "INVALID_WEBSITE_URL", detail: "Enter a valid website address." }, { status: 400 });
     const id = `client-${crypto.randomUUID()}`;
     result = await supabase.from("clients").insert({
       id,
@@ -134,6 +148,8 @@ export async function POST(request: Request) {
       short_name: businessName,
       email: clean(body.email, 320) || null,
       phone: clean(body.phone, 50) || null,
+      website: website.website,
+      domain: website.domain,
       status: "active",
       updated_at: new Date().toISOString(),
     }).select().single();
@@ -231,6 +247,12 @@ export async function PATCH(request: Request) {
     if (body.businessName !== undefined) updates.business_name = clean(body.businessName, 200);
     if (body.email !== undefined) updates.email = clean(body.email, 320) || null;
     if (body.phone !== undefined) updates.phone = clean(body.phone, 50) || null;
+    if (body.website !== undefined) {
+      const website = websiteDetails(body.website);
+      if (!website) return NextResponse.json({ error: "INVALID_WEBSITE_URL", detail: "Enter a valid website address." }, { status: 400 });
+      updates.website = website.website;
+      if (website.domain) updates.domain = website.domain;
+    }
     if (body.status !== undefined) updates.status = clean(body.status, 50);
     result = await supabase.from("clients").update(updates).eq("id", id).select().single();
     detail = "Client details updated";

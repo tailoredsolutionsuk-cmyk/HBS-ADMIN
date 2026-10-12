@@ -15,8 +15,13 @@ async function ownerAccess() {
 
 async function github(path: string, init?: RequestInit) {
   if (!process.env.GITHUB_TOKEN) throw new Error("GITHUB_NOT_CONFIGURED");
-  const response = await fetch(`https://api.github.com${path}`, { ...init, headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "X-GitHub-Api-Version": "2022-11-28", ...init?.headers }, cache: "no-store", signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`GITHUB_WEBHOOK_${response.status}`);
+  const response = await fetch(`https://api.github.com${path}`, { ...init, headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "User-Agent": "HBS-Admin-CRM", "X-GitHub-Api-Version": "2022-11-28", ...init?.headers }, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("GITHUB_TOKEN_UNAUTHORIZED: Replace GITHUB_TOKEN with a current token that has Webhooks read and write access to this repository.");
+    if (response.status === 403) throw new Error("GITHUB_WEBHOOK_FORBIDDEN: Grant GITHUB_TOKEN Webhooks read and write access to this repository, then try again.");
+    if (response.status === 404) throw new Error("GITHUB_REPOSITORY_NOT_FOUND: Check the tracked repository name and token repository access.");
+    throw new Error(`GITHUB_WEBHOOK_${response.status}`);
+  }
   return response.status === 204 ? null : response.json();
 }
 

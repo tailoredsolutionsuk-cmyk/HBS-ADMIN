@@ -6,10 +6,10 @@ import AiPanel from "./ai-panel";
 import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
 import CrmPanel from "./crm-panel";
 import IntegrationsPanel from "./integrations-panel";
+import JarvisPanel from "./jarvis-panel";
 import type { MetricsCrmData } from "./metrics-panel";
 
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
-const OnboardingPanel = dynamic(() => import("./onboarding-panel"), { loading: () => <DashboardSkeleton label="Opening onboarding" /> });
 const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
 const LeadFinderPanel = dynamic(() => import("./lead-finder-panel"), { loading: () => <DashboardSkeleton label="Opening Lead Finder" /> });
 
@@ -74,7 +74,7 @@ export default function AdminPage() {
   const [builderStart, setBuilderStart] = useState(0);
   const [builderDirty, setBuilderDirty] = useState(false);
   const [createSignal, setCreateSignal] = useState(0);
-  const [onboardingClient, setOnboardingClient] = useState("");
+  const [clientSection, setClientSection] = useState<"directory" | "pipeline">("directory");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [websites, setWebsites] = useState<Website[]>([]);
@@ -86,15 +86,25 @@ export default function AdminPage() {
   const [notice, setNotice] = useState("");
 
   const navigate = (view: AdminView, startWebsite = false) => {
-    if (activeView === "Websites" && view !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return;
+    const targetView = view === "Pipeline" ? "Clients" : view;
+    if (view === "Pipeline") {
+      setClientSection("pipeline");
+    } else if (targetView === "Clients") {
+      setClientSection("directory");
+    }
+    if (activeView === "Websites" && targetView !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return;
     setBuilderDirty(false);
-    if (view === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
-    setActiveView(view);
+    if (targetView === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
+    setActiveView(targetView);
   };
 
   const create = (view: "Pipeline" | "Tasks" | "Websites") => {
     if (view === "Websites") navigate("Websites", true);
-    else { setCreateSignal((value) => value + 1); navigate(view); }
+    else {
+      setCreateSignal((value) => value + 1);
+      if (view === "Pipeline") navigate("Pipeline");
+      else navigate(view);
+    }
   };
 
   useEffect(() => {
@@ -119,11 +129,11 @@ export default function AdminPage() {
     if (activeView === "Overview") return <Overview websites={websites} activities={activities} stats={stats} crm={crm} loading={loading} onNavigate={navigate} onCreate={create} />;
     if (activeView === "Websites") return <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} />;
     if (activeView === "AI Assistant") return <AiPanel />;
+    if (activeView === "JARVIS CEO") return <JarvisPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
-    if (activeView === "Onboarding") return <OnboardingPanel initialClientId={onboardingClient} />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
     if (activeView === "Lead Finder") return <LeadFinderPanel onOpenPipeline={() => navigate("Pipeline")} />;
-    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} onStartProject={(clientId) => { setOnboardingClient(clientId); navigate("Onboarding"); }} />;
+    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} clientSection={clientSection} onClientSectionChange={setClientSection} />;
   })();
 
   return <AdminShell activeView={activeView} collapsed={collapsed} mobileOpen={mobileOpen} connected={connected} loading={loading} onNavigate={navigate} onToggleCollapsed={() => setCollapsed((value) => !value)} onToggleMobile={() => setMobileOpen((value) => !value)}><div className="admin-main">{module}</div>{notice ? <div className="admin-toast" role="status"><span>!</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div> : null}</AdminShell>;
