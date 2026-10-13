@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import AiPanel from "./ai-panel";
 import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
 import CrmPanel from "./crm-panel";
 import IntegrationsPanel from "./integrations-panel";
@@ -57,7 +56,7 @@ function Overview({ websites, activities, stats, crm, loading, onNavigate, onCre
 
     <div className="admin-dashboard-grid">
       <section className="admin-panel admin-attention-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Priority queue</span><h3>Needs attention</h3></div><span className={`admin-attention-count ${attention.length ? "active" : ""}`}>{attention.length}</span></div>{attention.length ? <div className="admin-attention-list">{attention.map((item) => <button key={`${item.view}-${item.id}`} onClick={() => onNavigate(item.view)}><span className={`admin-attention-icon ${item.tone}`}>!</span><span><strong>{item.title}</strong><small>{item.detail}</small></span><Icon name="arrow-up-right" size={14} /></button>)}</div> : <div className="admin-empty-state compact"><span>✓</span><strong>You&apos;re all caught up</strong><p>No overdue tasks or follow-ups.</p></div>}</section>
-      <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => onCreate("Pipeline")}><span><Icon name="activity" size={17} /></span><strong>Add a new lead</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onCreate("Tasks")}><span><Icon name="layers" size={17} /></span><strong>Create a task</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("Clients")}><span><Icon name="users" size={17} /></span><strong>Open client directory</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("AI Assistant")}><span><Icon name="sparkles" size={17} /></span><strong>Ask HBS AI</strong><Icon name="arrow-up-right" size={14} /></button></div></section>
+      <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Shortcuts</span><h3>Quick actions</h3></div></div><div className="admin-quick-actions"><button onClick={() => onCreate("Pipeline")}><span><Icon name="activity" size={17} /></span><strong>Add a new lead</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onCreate("Tasks")}><span><Icon name="layers" size={17} /></span><strong>Create a task</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("Clients")}><span><Icon name="users" size={17} /></span><strong>Open client directory</strong><Icon name="arrow-up-right" size={14} /></button><button onClick={() => onNavigate("JARVIS CEO")}><span><Icon name="sparkles" size={17} /></span><strong>Ask JARVIS</strong><Icon name="arrow-up-right" size={14} /></button></div></section>
     </div>
 
     <div className="admin-grid lower">
@@ -128,7 +127,6 @@ export default function AdminPage() {
   const module = (() => {
     if (activeView === "Overview") return <Overview websites={websites} activities={activities} stats={stats} crm={crm} loading={loading} onNavigate={navigate} onCreate={create} />;
     if (activeView === "Websites") return <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} />;
-    if (activeView === "AI Assistant") return <AiPanel />;
     if (activeView === "JARVIS CEO") return <JarvisPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;

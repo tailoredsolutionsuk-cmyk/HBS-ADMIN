@@ -16,9 +16,4 @@ export function getAiGatewayModel() {
     || FALLBACK_AI_GATEWAY_MODEL;
 }
 
-/** Keep the prompt-only assistant configurable without changing JARVIS. */
-export function getAiAssistantModel() {
-  return configuredModel(process.env.AI_ASSISTANT_MODEL) || getAiGatewayModel();
-}
-
 export { FALLBACK_AI_GATEWAY_MODEL };
