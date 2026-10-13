@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 
 type Message = { role: "admin" | "assistant"; text: string };
-const starters = ["Summarise my sales pipeline and flag the best opportunities.", "What should I prioritise today?", "Draft a friendly follow-up for our newest lead."];
+const starters = ["Draft a friendly follow-up to a fictional new lead.", "Suggest three ways a small business can improve its website.", "Write a short, generic marketing checklist."];
 
 const aiErrors: Record<string, string> = {
   AI_AUTH_FAILED: "The AI Gateway connection was rejected. An administrator needs to reconnect it in Vercel.",
@@ -16,7 +16,7 @@ const aiErrors: Record<string, string> = {
 };
 
 export default function AiPanel() {
-  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", text: "I can review your live CRM, prioritise opportunities, draft follow-ups, and suggest next actions. What would you like to work on?" }]);
+  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", text: "I can help draft and brainstorm from what you type here. I do not read your CRM records. What would you like to work on?" }]);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,12 +41,12 @@ export default function AiPanel() {
   function useStarter(value: string) { setPrompt(value); }
 
   return <div className="admin-ai-view">
-    <section className="admin-welcome"><div><span className="admin-kicker">Vercel AI SDK · Prompt-only privacy mode</span><h2>HBS AI assistant</h2><p>No CRM records are shared automatically. Only what you deliberately type is sent to Vercel AI Gateway.</p></div><span className="admin-analytics-live"><i />Admin scope</span></section>
+    <section className="admin-welcome"><div><span className="admin-kicker">Vercel AI SDK · Prompt-only trial</span><h2>HBS AI assistant</h2><p>Only what you type is sent to Vercel AI Gateway. During the free-model trial, do not enter client names, contact details or confidential business information: the model provider may retain prompts and responses.</p></div><span className="admin-analytics-live"><i />Admin scope</span></section>
     <section className="admin-panel admin-ai-panel">
-      <div className="admin-ai-messages">{messages.map((message, index) => <article className={`admin-ai-message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "assistant" ? "HBS AI" : "You"}</span><p>{message.text}</p></article>)}{loading && <article className="admin-ai-message assistant"><span>HBS AI</span><p>Reviewing the CRM…</p></article>}</div>
+      <div className="admin-ai-messages">{messages.map((message, index) => <article className={`admin-ai-message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "assistant" ? "HBS AI" : "You"}</span><p>{message.text}</p></article>)}{loading && <article className="admin-ai-message assistant"><span>HBS AI</span><p>Thinking…</p></article>}</div>
       {error && <p className="admin-crm-error" role="alert">{error}</p>}
       <div className="admin-ai-starters">{starters.map((starter) => <button key={starter} onClick={() => useStarter(starter)}>{starter}</button>)}</div>
-      <form className="admin-ai-composer" onSubmit={ask}><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ask about leads, clients, tasks, proposals or follow-ups…" rows={3} maxLength={2500} /><button className="admin-primary-button" disabled={!prompt.trim() || loading}>{loading ? "Thinking…" : "Ask HBS AI"}</button></form>
+      <form className="admin-ai-composer" onSubmit={ask}><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Try a general marketing question with fictional details…" rows={3} maxLength={2500} /><button className="admin-primary-button" disabled={!prompt.trim() || loading}>{loading ? "Thinking…" : "Ask HBS AI"}</button></form>
     </section>
   </div>;
 }

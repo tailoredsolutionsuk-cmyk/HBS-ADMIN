@@ -1,6 +1,6 @@
 import { APICallError, generateText } from "ai";
 import { NextResponse } from "next/server";
-import { getAiGatewayModel } from "../../../../lib/ai/gateway";
+import { getAiAssistantModel } from "../../../../lib/ai/gateway";
 import { createClient } from "../../../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -48,12 +48,12 @@ export async function POST(request: Request) {
   const message = text(body.message);
   if (!message) return NextResponse.json({ error: "MESSAGE_REQUIRED" }, { status: 400 });
 
-  const model = getAiGatewayModel();
+  const model = getAiAssistantModel();
 
   try {
     const result = await generateText({
       model,
-      system: "You are the private HBS CRM business assistant. Help with sales strategy, follow-up drafts, priorities, proposals, marketing ideas, and next actions using only the information the admin deliberately supplies in the prompt. Be concise and commercially useful. Never claim that an email was sent, a record changed, or an external action completed. Never request credentials or hidden secrets.",
+      system: "You are the HBS prompt-only business assistant. You cannot see CRM records. Help with sales strategy, follow-up drafts, priorities, proposals, marketing ideas, and next actions using only information deliberately supplied in the prompt. Be concise and commercially useful. Never claim that an email was sent, a record changed, or an external action completed. Never request credentials or hidden secrets.",
       prompt: message,
     });
 
