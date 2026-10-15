@@ -10,9 +10,9 @@ function configuredModel(value: string | undefined) {
  * AI_MODEL remains as a temporary fallback so existing deployments keep working
  * while AI_GATEWAY_MODEL is rolled out to each Vercel environment.
  */
-export function getAiGatewayModel() {
-  return configuredModel(process.env.AI_GATEWAY_MODEL)
-    || configuredModel(process.env.AI_MODEL)
+export function getAiGatewayModel(env: Record<string, string | undefined> = process.env) {
+  return configuredModel(env.AI_GATEWAY_MODEL)
+    || configuredModel(env.AI_MODEL)
     || FALLBACK_AI_GATEWAY_MODEL;
 }
 
