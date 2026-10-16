@@ -40,7 +40,8 @@ alter table public.onboarding_meta_proposals enable row level security;
 alter table public.onboarding_meta_proposal_versions enable row level security;
 alter table public.onboarding_meta_reviews enable row level security;
 revoke all on public.onboarding_meta_proposals, public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews from public, anon, authenticated;
-grant select, insert, update on public.onboarding_meta_proposals, public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews to service_role;
+grant select, insert, update on public.onboarding_meta_proposals to service_role;
+grant select, insert on public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews to service_role;
 
 create or replace function public.onboarding_meta_snapshot() returns trigger
 language plpgsql security invoker set search_path = '' as $$

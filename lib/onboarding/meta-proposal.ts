@@ -41,6 +41,13 @@ export function proposalReviewGaps(draft: MetaProposal): (keyof MetaProposal)[] 
   return required.filter(key => !draft[key]);
 }
 
+export function landingMatchesPreview(landingPage: string, previewUrl: string): boolean {
+  try {
+    const landing = new URL(landingPage), preview = new URL(previewUrl);
+    return landing.protocol === "https:" && preview.protocol === "https:" && landing.origin === preview.origin && !landing.username && !landing.password;
+  } catch { return false; }
+}
+
 const fit = (value: string | undefined, max: number) => value?.trim().length && value.trim().length <= max ? value.trim() : "";
 
 export function suggestedMetaProposal(project: Project): MetaProposal {

@@ -64,8 +64,16 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
   const [notice, setNotice] = useState("");
   useEffect(() => {
     let active = true;
-    void onboardingRequest<{ proposal: SavedMetaProposal | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
-      .then(result => { if (!active || !result.proposal) return; if (result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; } setDraft(result.proposal.draft); setProposalRevision(result.proposal.revision); setReview(result.proposal); setDirty(false); })
+    void onboardingRequest<{ proposal: SavedMetaProposal | null; previewUrl: string | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
+      .then(result => {
+        if (!active) return;
+        if (result.proposal?.source_brief_revision !== undefined && result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; }
+        const source = result.proposal?.draft || suggestedMetaProposal(project);
+        const needsLandingPage = Boolean(result.previewUrl && !source.landingPage);
+        setDraft(needsLandingPage ? { ...source, landingPage: result.previewUrl! } : source);
+        if (result.proposal) { setProposalRevision(result.proposal.revision); setReview(result.proposal); }
+        setDirty(Boolean(result.proposal && needsLandingPage));
+      })
       .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Could not load the proposal."); });
     return () => { active = false; };
   }, [project.id, project.revision]);
