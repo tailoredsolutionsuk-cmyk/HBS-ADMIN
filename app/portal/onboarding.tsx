@@ -34,7 +34,7 @@ function BriefForm({ project, onSaved }: { project: Project; onSaved: () => Prom
     {error && <p role="alert" className="onboarding-error">{error} Your text is kept here. Copy any unsaved changes before reloading if the project changed elsewhere.</p>}
     {notice && <p role="status" className="onboarding-success">{notice}</p>}
     <form className="onboarding-form" onSubmit={e => { e.preventDefault(); void save("submit"); }}>
-      {BRIEF_FIELDS.map(([key,label],index) => <label key={key}>{label}{index<4 ? " (required to submit)" : " (optional)"}<textarea maxLength={4000} required={index<4} disabled={busy || !editable} value={brief[key]} onChange={e => { setBrief({...brief,[key]:e.target.value}); setDirty(true); }} /></label>)}
+      {BRIEF_FIELDS.map(([key,label],index) => <label key={key}>{label}{index<4 ? " (required to submit)" : " (optional)"}<textarea maxLength={key === "publicEmail" ? 300 : key === "publicPhone" ? 40 : 4000} required={index<4} disabled={busy || !editable} value={brief[key]} onChange={e => { setBrief({...brief,[key]:e.target.value}); setDirty(true); }} /></label>)}
       {editable && <div className="onboarding-actions"><button type="button" disabled={busy} onClick={() => void save("save")}>{busy ? "Saving…" : "Save draft"}</button><button disabled={busy} className="onboarding-primary">Submit brief for review</button><span>{dirty ? "Unsaved changes" : "Up to date"}</span></div>}
     </form>
   </article>;

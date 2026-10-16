@@ -20,6 +20,8 @@ test("partial drafts save but submission requires the four core fields", () => {
   assert.deepEqual(parseBrief({...brief,client_id:"other-client"},true),brief);
   assert.throws(() => parseBrief({...brief,brand:"x".repeat(4001)},true));
   assert.throws(() => parseBrief({...brief,goals:[]},true));
+  assert.equal(parseBrief({...brief,industry:"Automotive",publicEmail:"hello@example.test"},true).industry,"Automotive");
+  assert.throws(() => parseBrief({...brief,publicEmail:"not-an-email"},true));
 });
 test("IDs and revisions are strict, only draft states permit client edits", () => {
   assert.equal(projectId("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
