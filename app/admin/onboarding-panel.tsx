@@ -52,16 +52,20 @@ function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Pro
     <div className="onboarding-actions"><button className="admin-primary-button" disabled={busy || Boolean(siteId)}>{busy ? "Saving…" : "Create or open private draft"}</button>{siteId && onOpenWebsite && <button type="button" onClick={() => onOpenWebsite(siteId)}>Open in Website Studio</button>}</div>
   </form>;
 }
-function MetaProposalForm({ project, canEdit }: { project: Project; canEdit: boolean }) {
+type SavedMetaProposal = { revision: number; source_brief_revision: number; draft: MetaProposal; reviewed_revision: number | null; review_decision: "approved" | "changes_requested" | null; review_note: string | null };
+function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Project; canEdit: boolean; canOwnerReview: boolean }) {
   const [draft, setDraft] = useState<MetaProposal>(() => suggestedMetaProposal(project));
   const [proposalRevision, setProposalRevision] = useState<number | null>(null);
+  const [review, setReview] = useState<Pick<SavedMetaProposal, "reviewed_revision" | "review_decision" | "review_note"> | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
+  const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   useEffect(() => {
     let active = true;
-    void onboardingRequest<{ proposal: { revision: number; source_brief_revision: number; draft: MetaProposal } | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
-      .then(result => { if (!active || !result.proposal) return; if (result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; } setDraft(result.proposal.draft); setProposalRevision(result.proposal.revision); })
+    void onboardingRequest<{ proposal: SavedMetaProposal | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
+      .then(result => { if (!active || !result.proposal) return; if (result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; } setDraft(result.proposal.draft); setProposalRevision(result.proposal.revision); setReview(result.proposal); setDirty(false); })
       .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Could not load the proposal."); });
     return () => { active = false; };
   }, [project.id, project.revision]);
@@ -77,16 +81,30 @@ function MetaProposalForm({ project, canEdit }: { project: Project; canEdit: boo
   return <form className="onboarding-form onboarding-workstream" onSubmit={async event => {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
-      const result = await onboardingRequest<{ proposal: { revision: number; draft: MetaProposal } }>("/api/admin/onboarding/meta-proposal", { projectId: project.id, briefRevision: project.revision, expectedRevision: proposalRevision, draft });
+      const result = await onboardingRequest<{ proposal: SavedMetaProposal }>("/api/admin/onboarding/meta-proposal", { action: "save", projectId: project.id, briefRevision: project.revision, expectedRevision: proposalRevision, draft });
       setProposalRevision(result.proposal.revision); setDraft(result.proposal.draft);
+      setReview(result.proposal); setDirty(false);
       setNotice(`Meta campaign proposal revision ${result.proposal.revision} saved for review. No request was sent and no ad was created.`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save proposal."); }
     finally { setBusy(false); }
   }}>
     <h4>Meta Ads proposal</h4><p>Draft campaign details and an access request. A proposed budget is information for review, not permission to spend.</p>
-    {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || !canEdit} value={draft[field.key]} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} /></label>)}
+    {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || !canEdit} value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setDirty(true); }} /></label>)}
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
-    <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}</span>}</div>
+    <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy || (proposalRevision !== null && !dirty)}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}{dirty ? " · Unsaved edits" : ""}</span>}</div>
+    {review?.review_decision && <p className="onboarding-info">Owner review: {review.review_decision === "approved" ? "Approved for client review" : "Changes requested"} on revision {review.reviewed_revision}{review.reviewed_revision !== proposalRevision ? " · A newer revision needs review" : ""}{review.review_note ? ` — ${review.review_note}` : ""}. This is not approval to spend or launch ads.</p>}
+    {canOwnerReview && proposalRevision !== null && <div className="onboarding-actions"><label>Owner review note<textarea maxLength={4000} value={reviewNote} disabled={busy} onChange={event => setReviewNote(event.target.value)} /></label><button type="button" disabled={busy || dirty} onClick={async () => {
+      if (!window.confirm(`Approve Meta proposal revision ${proposalRevision} for client review? This does not send it or authorise ad spending.`)) return;
+      setBusy(true); setError(""); setNotice("");
+      try { const result = await onboardingRequest<{ proposal: SavedMetaProposal }>("/api/admin/onboarding/meta-proposal", { action: "review", projectId: project.id, briefRevision: project.revision, expectedRevision: proposalRevision, decision: "approved", note: reviewNote }); setReview(result.proposal); setNotice(`Proposal revision ${proposalRevision} approved for client review. Nothing was sent.`); }
+      catch (cause) { setError(cause instanceof Error ? cause.message : "Could not review proposal."); }
+      finally { setBusy(false); }
+    }}>Approve exact revision</button><button type="button" disabled={busy || dirty || !reviewNote.trim()} onClick={async () => {
+      setBusy(true); setError(""); setNotice("");
+      try { const result = await onboardingRequest<{ proposal: SavedMetaProposal }>("/api/admin/onboarding/meta-proposal", { action: "review", projectId: project.id, briefRevision: project.revision, expectedRevision: proposalRevision, decision: "changes_requested", note: reviewNote }); setReview(result.proposal); setNotice(`Changes requested on proposal revision ${proposalRevision}.`); }
+      catch (cause) { setError(cause instanceof Error ? cause.message : "Could not review proposal."); }
+      finally { setBusy(false); }
+    }}>Request changes</button></div>}
   </form>;
 }
 export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }: { initialClientId?: string; onOpenWebsite?: (siteId: string) => void }) {
@@ -163,7 +181,7 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
             <Workstream title="Website development" missing={packet.website.missing} steps={packet.website.steps} />
             {data.permissions.canStartWebsite && <WebsiteDraftForm key={project.id} project={project} clientName={packet.website.clientName} onOpenWebsite={onOpenWebsite} />}
             <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
-            <MetaProposalForm key={project.id} project={project} canEdit={data.permissions.canReview} />
+            <MetaProposalForm key={project.id} project={project} canEdit={data.permissions.canReview} canOwnerReview={data.permissions.canStartWebsite} />
           </div>}
         </article> : <div className="onboarding-detail"><h3>Select a project</h3><p>View the brief and review its status here. Project checklists appear in Tasks.</p></div>}
       </div>

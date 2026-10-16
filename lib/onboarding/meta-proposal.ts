@@ -36,6 +36,11 @@ export function parseMetaProposal(value: unknown): MetaProposal {
   return result;
 }
 
+export function proposalReviewGaps(draft: MetaProposal): (keyof MetaProposal)[] {
+  const required: (keyof MetaProposal)[] = ["objective", "offer", "audience", "geography", "landingPage", "conversionEvent", "budgetProposal", "primaryText", "headline", "creativeBrief", "assetRights"];
+  return required.filter(key => !draft[key]);
+}
+
 const fit = (value: string | undefined, max: number) => value?.trim().length && value.trim().length <= max ? value.trim() : "";
 
 export function suggestedMetaProposal(project: Project): MetaProposal {

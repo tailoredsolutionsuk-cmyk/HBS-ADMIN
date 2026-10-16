@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseMetaProposal, suggestedMetaProposal } from "../lib/onboarding/meta-proposal.ts";
+import { parseMetaProposal, proposalReviewGaps, suggestedMetaProposal } from "../lib/onboarding/meta-proposal.ts";
 import { EMPTY_BRIEF, type Project } from "../lib/onboarding/model.ts";
 
 const project: Project = {
@@ -18,6 +18,13 @@ test("Meta proposal starts with sourced fields and no invented copy or landing U
   assert.equal(draft.landingPage, "");
   assert.match(draft.accessRequestDraft, /do not send passwords/i);
   assert.deepEqual(parseMetaProposal(draft), draft);
+  assert.ok(proposalReviewGaps(draft).includes("landingPage"));
+});
+
+test("owner review requires an exact, complete proposal but does not treat budget as spending approval", () => {
+  const draft = { ...suggestedMetaProposal(project), landingPage: "https://example.test/preview", conversionEvent: "Lead", primaryText: "Book a check", headline: "Winter check", creativeBrief: "Use client photo", assetRights: "Client owns photo" };
+  assert.deepEqual(proposalReviewGaps(draft), []);
+  assert.equal(parseMetaProposal(draft).budgetProposal, "£300 per month");
 });
 
 test("Meta proposal rejects unsafe links and non-text values", () => {
