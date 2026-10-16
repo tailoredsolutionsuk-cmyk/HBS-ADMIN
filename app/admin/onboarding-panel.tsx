@@ -70,6 +70,7 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
   const [reviewNote, setReviewNote] = useState("");
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -84,7 +85,8 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
         if (result.proposal) { setProposalRevision(result.proposal.revision); setReview(result.proposal); }
         setDirty(Boolean(result.proposal && needsLandingPage));
       })
-      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Could not load the proposal."); });
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Could not load the proposal."); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [project.id, project.revision]);
   const fields: { key: keyof MetaProposal; label: string; max: number }[] = [
@@ -107,9 +109,10 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
     finally { setBusy(false); }
   }}>
     <h4>Meta Ads proposal</h4><p>Draft campaign details and an access request. A proposed budget is information for review, not permission to spend.</p>
-    {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || !canEdit} value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setDirty(true); }} /></label>)}
+    {loading && <p role="status">Loading saved proposal…</p>}
+    {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || loading || !canEdit} value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setDirty(true); }} /></label>)}
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
-    <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy || (proposalRevision !== null && !dirty)}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}{dirty ? " · Unsaved edits" : ""}</span>}</div>
+    <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy || loading || (proposalRevision !== null && !dirty)}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}{dirty ? " · Unsaved edits" : ""}</span>}</div>
     {review?.review_decision && <p className="onboarding-info">Owner review: {review.review_decision === "approved" ? "Approved for client review" : "Changes requested"} on revision {review.reviewed_revision}{review.reviewed_revision !== proposalRevision ? " · A newer revision needs review" : ""}{review.review_note ? ` — ${review.review_note}` : ""}. This is not approval to spend or launch ads.</p>}
     {canOwnerReview && proposalRevision !== null && <div className="onboarding-actions"><label>Owner review note<textarea maxLength={4000} value={reviewNote} disabled={busy} onChange={event => setReviewNote(event.target.value)} /></label><button type="button" disabled={busy || dirty} onClick={async () => {
       if (!window.confirm(`Approve Meta proposal revision ${proposalRevision} for client review? This does not send it or authorise ad spending.`)) return;
