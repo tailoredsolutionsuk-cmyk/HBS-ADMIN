@@ -9,8 +9,12 @@ type Approval = { id: string; action_type: string; status: string; payload: { ti
 type Briefing = { date: string; message: string; stats: { clients: number; open_leads: number; open_tasks: number; overdue_tasks: number; overdue_follow_ups: number }; priorities: Array<{ kind: string; title: string; detail: string; tone: string }>; approvals: number };
 
 const errors: Record<string, string> = {
-  AI_AUTH_FAILED: "The AI Gateway connection was rejected.",
-  AI_BILLING_REQUIRED: "Vercel AI Gateway needs a valid payment method.",
+  AI_CONFIGURATION_REQUIRED: "JARVIS AI setup is incomplete. Ask the owner to configure the selected provider's credentials and model.",
+  AI_AUTH_FAILED: "The AI provider rejected the configured credentials.",
+  AI_ACCESS_DENIED: "The AI provider denied this request. Check project permissions, account verification and model access.",
+  AI_BILLING_REQUIRED: "The AI provider requires billing or account verification.",
+  AI_CREDITS_REQUIRED: "The AI account has insufficient API credits or billing quota.",
+  AI_PAYMENT_REQUIRED: "The AI provider reported a payment issue. Check its billing details.",
   AI_BUDGET_REACHED: "The AI budget limit has been reached.",
   AI_MODEL_UNAVAILABLE: "The selected AI model is unavailable.",
   AI_RATE_LIMITED: "JARVIS is busy right now. Please try again shortly.",

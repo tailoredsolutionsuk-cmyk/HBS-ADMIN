@@ -8,18 +8,20 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "ai:check": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/check-jarvis-ai.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "4.0.46",
     "@ai-sdk/react": "4.0.71",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.112.3",
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.0.0",
     "ai": "7.0.68",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "@vercel/analytics": "2.0.1",
-    "@vercel/speed-insights": "2.0.0"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
