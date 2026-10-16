@@ -22,7 +22,9 @@ test("approved client brief produces separate website and Meta handoffs without 
   assert.equal(packet.metaAds.accountId, null);
   assert.ok(packet.metaAds.missing.some(item => item.includes("budget")));
   assert.ok(packet.website.steps.at(-1)?.ownerApproval);
-  assert.ok(packet.metaAds.steps.some(item => item.title.includes("launch") && item.ownerApproval));
+  assert.ok(packet.metaAds.steps.some(item => item.title.includes("access request") && item.ownerApproval));
+  assert.ok(packet.metaAds.steps.some(item => item.title.includes("proposal") && item.ownerApproval));
+  assert.ok(packet.metaAds.steps.every(item => !item.title.toLowerCase().includes("launch")));
 });
 
 test("unapproved or incomplete brief cannot be described as approved or ready for ad spending", () => {

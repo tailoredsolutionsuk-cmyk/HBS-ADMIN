@@ -1,6 +1,6 @@
 # New-client website and Meta Ads automation
 
-The existing CRM onboarding project is the source of truth. A client submits a project brief in the portal; an HBS owner or admin reviews it. The approved project revision then produces a website and Meta Ads preparation packet in the admin view. This packet is read-only and does not provision hosting, create ads or spend money.
+The existing CRM onboarding project is the source of truth. A client submits a project brief in the portal; an HBS owner or admin reviews it. The approved project revision then produces a website and Meta Ads preparation packet in the admin view. The first automation target is a private website preview and a Meta campaign proposal for review. Plan an access request for the client's Meta Business Portfolio, ad account and Page. This packet is read-only and does not provision hosting, create ads or spend money.
 
 ## Workflow and required outcomes
 
@@ -10,18 +10,19 @@ The existing CRM onboarding project is the source of truth. A client submits a p
 | Website preparation | Builder-ready services, niche, location, contact and content | Reviewed field mapping, asset rights and missing-input decisions |
 | Website draft | One private site linked to the onboarding project | Stable site ID, saved revision and no duplicate on retry |
 | Preview and QA | Working pages, enquiry form, mobile/accessibility checks | Preview URL, checklist results and client feedback |
-| Website release | Approved revision on the intended domain | Client sign-off, HBS release approval and exact live deployment |
+| Website preview review | Client and HBS review one private revision | Preview URL, QA results, feedback and recorded decision |
 | Meta campaign preparation | Objective, audience, offer, copy and creative tied to landing page | Reviewable campaign draft and claim/asset sources |
-| Meta account and tracking | Correct account, pixel/conversion event and landing URL | Access grant, test conversion and privacy review |
-| Meta launch | Exact campaign activated within approved budget | Owner approval for account, targeting, creative, schedule and spend; provider receipt |
-| Performance review | Spend and conversions compared with the agreed goal | Dated results, feedback and next action |
+| Meta access request | Client receives approved instructions for granting needed account and Page access | Owner-approved request and verified access status |
+| Meta proposal review | Client and HBS review one proposal revision | Proposal, proposed budget, tracking plan, feedback and recorded decision |
+
+Website production release, provider campaign creation, Meta launch and performance reporting are later phases. Each requires its own implementation and approval gate. The first workflow stops at reviewable preview and proposal artifacts.
 
 ## Next implementation slices
 
 1. Add structured intake fields for industry, services, location, public contact, offer, target geography, budget proposal and asset rights. Keep old briefs readable; require review of missing fields before creating provider resources.
 2. Bind each approved onboarding project to one Website Studio site with a database uniqueness constraint and transactional, retry-safe creation. Generate a private draft, then keep preview, client review and production launch as separate steps.
-3. Add a versioned Meta campaign proposal record and preview. Prepare copy and creative within the client's verified account scope. Do not infer a budget or promise results from the brief.
-4. Connect the client's Meta Business account with least-privilege access. Record account, page, pixel and ad-account IDs in server-side configuration. Create or update provider drafts only after exact owner approval; require a separate approval before activation or spend.
+3. Add a versioned Meta campaign proposal record and preview. Prepare copy and creative from client-approved inputs. Do not infer a budget or promise results from the brief. Draft an access request for the client; sending it requires owner approval.
+4. After the preview and proposal workflow works, connect the client's Meta Business account with least-privilege access. Record account, page, pixel and ad-account IDs in server-side configuration. Create or update provider drafts only after exact owner approval; require a separate approval before activation or spend.
 5. Connect conversion reporting to the CRM and review outcomes. Reconcile provider receipts, errors, retries and costs in the audit trail.
 
 The current Website Studio AI editor still uses Vercel AI Gateway (`BUILDER_AI_MODEL`); JARVIS chat's direct OpenAI setting does not switch it. Verify or migrate builder AI access before relying on automated content generation. Meta account integration, campaign drafting in Meta, spend controls and provider launch are not connected yet.

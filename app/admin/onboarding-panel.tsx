@@ -87,7 +87,7 @@ export default function OnboardingPanel({ initialClientId = "" }: { initialClien
             <div className="onboarding-actions"><button disabled={busy} className="admin-primary-button" onClick={() => { if (window.confirm("Approve this brief? This does not build or publish a website.")) void mutate({action:"approve",id:project.id,revision:project.revision,note},"Brief approved. Website provisioning remains a separate step."); }}>Approve brief</button><button disabled={busy || !note.trim()} onClick={() => void mutate({action:"request_changes",id:project.id,revision:project.revision,note},"Changes requested. The client can edit the brief again in their portal.")}>Request changes</button></div>
           </div>}
           {packet && <div className="onboarding-handoff"><p className="onboarding-success">Delivery handoff prepared from approved brief revision {packet.briefRevision}. Continue the checklist in Tasks.</p>
-            <p>This is a preparation plan. Website Studio still needs a reviewed builder brief; no website or Meta campaign has been created.</p>
+            <p>First-phase outcome: a private website preview and a Meta campaign proposal for review. Website Studio still needs a reviewed builder brief; no website or Meta campaign has been created.</p>
             <Workstream title="Website development" missing={packet.website.missing} steps={packet.website.steps} />
             <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
           </div>}
