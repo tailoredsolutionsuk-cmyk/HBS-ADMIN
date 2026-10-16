@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { builderDB } from "../../../../../lib/builder/server";
 import { createDocument, DocumentError, parseBrief } from "../../../../../lib/builder/model";
+import { BuilderError, resourceName } from "../../../../../lib/builder/providers";
 import { onboardingAdmin, databaseError, mutationLimit, readMutation } from "../../../../../lib/onboarding/server";
 import { OnboardingError, projectId, revision } from "../../../../../lib/onboarding/model";
 
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
     if (role !== "owner") throw new OnboardingError("The HBS owner must create the first website draft.", 403);
     const body = await readMutation(request);
     const id = projectId(body.projectId);
+    try { resourceName(id); } catch (cause) { if (cause instanceof BuilderError) throw new OnboardingError("This project ID cannot be used for Website Studio. Contact HBS support.", 409); throw cause; }
     const approvedRevision = revision(body.briefRevision);
     const { data: project, error } = await db.from("onboarding_projects")
       .select("id,client_id,status,revision").eq("id", id).maybeSingle();
