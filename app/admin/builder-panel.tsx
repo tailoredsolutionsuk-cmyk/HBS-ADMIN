@@ -17,7 +17,7 @@ async function request(body?: Record<string, unknown>, id?: string) {
   if (!response.ok) throw new Error(data.error || 'Could not complete this step. Please try again.');
   return data;
 }
-export default function BuilderPanel({ startNew = 0, onDirty }: { startNew?: number; onDirty: (value: boolean) => void }) {
+export default function BuilderPanel({ startNew = 0, openSiteId = "", onDirty }: { startNew?: number; openSiteId?: string; onDirty: (value: boolean) => void }) {
   const [jobs,setJobs]=useState<BuilderJob[]>([]), [metrics,setMetrics]=useState<Metric[]>([]), [enquiries,setEnquiries]=useState(0);
   const [clients,setClients]=useState<{id:string;business_name:string}[]>([]), [clientId,setClientId]=useState('');
   const [aiConsent,setAiConsent]=useState(false), [reviewed,setReviewed]=useState(false);
@@ -52,6 +52,7 @@ export default function BuilderPanel({ startNew = 0, onDirty }: { startNew?: num
     setBusy('Opening website…'); setError(''); setNotice('');
     try { accept(await request(undefined, id)); setStep(null); setPage('home'); } catch (e) { setError((e as Error).message); } finally { setBusy(''); }
   }
+  useEffect(() => { if (openSiteId) void open(openSiteId); }, [openSiteId]);
   async function action(action: string, extra: Record<string, unknown> = {}, label = 'Saving…') {
     if (!site) return; setBusy(label); setError(''); setNotice('');
     try {

@@ -8,7 +8,7 @@ The existing CRM onboarding project is the source of truth. A client submits a p
 | --- | --- | --- |
 | Client intake | One client-scoped project and completed brief | Project ID, client ID, submitted revision and approval |
 | Website preparation | Builder-ready services, niche, location, contact and content | Reviewed field mapping, asset rights and missing-input decisions |
-| Website draft | One private site linked to the onboarding project | Stable site ID, saved revision and no duplicate on retry |
+| Website draft | Owner reviews the mapped brief, then saves one private site linked to the approved onboarding project | Project ID is the stable site ID, saved revision and no duplicate on retry |
 | Preview and QA | Working pages, enquiry form, mobile/accessibility checks | Preview URL, checklist results and client feedback |
 | Website preview review | Client and HBS review one private revision | Preview URL, QA results, feedback and recorded decision |
 | Meta campaign preparation | Objective, audience, offer, copy and creative tied to landing page | Reviewable campaign draft and claim/asset sources |
@@ -20,7 +20,7 @@ Website production release, provider campaign creation, Meta launch and performa
 ## Next implementation slices
 
 1. Structured client intake now includes industry, services, location, public contact, offer, target geography, budget proposal and asset rights. These fields are optional for older projects and do not constitute spending or asset-use approval. Review missing values before creating provider resources.
-2. Bind each approved onboarding project to one Website Studio site with a database uniqueness constraint and transactional, retry-safe creation. Generate a private draft, then keep preview, client review and production launch as separate steps.
+2. The HBS owner can now review a mapped Website Studio brief and create one private draft for an approved project. The project UUID is reused as the builder site primary key, so retries return the same site. It does not set up hosting or build the preview. Next, automate preview generation and client review while keeping production launch as a separate approval step.
 3. Add a versioned Meta campaign proposal record and preview. Prepare copy and creative from client-approved inputs. Do not infer a budget or promise results from the brief. Draft an access request for the client; sending it requires owner approval.
 4. After the preview and proposal workflow works, connect the client's Meta Business account with least-privilege access. Record account, page, pixel and ad-account IDs in server-side configuration. Create or update provider drafts only after exact owner approval; require a separate approval before activation or spend.
 5. Connect conversion reporting to the CRM and review outcomes. Reconcile provider receipts, errors, retries and costs in the audit trail.

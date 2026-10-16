@@ -1,4 +1,5 @@
 import type { Project } from "./model";
+import { EMPTY_BRIEF as EMPTY_BUILDER_BRIEF, type Brief as BuilderBrief } from "../builder/model.ts";
 
 export type DeliveryStep = {
   title: string;
@@ -46,6 +47,19 @@ export type DeliveryPacket = {
 
 const step = (title: string, outcome: string, evidence: string, ownerApproval = false): DeliveryStep =>
   ({ title, outcome, evidence, ownerApproval });
+
+/** Prefill only fields that fit the Website Studio contract; the owner reviews gaps. */
+export function suggestedBuilderBrief(project: Project, clientName: string): BuilderBrief {
+  const safe = (value: string | undefined, max: number) => value?.trim().length && value.trim().length <= max ? value.trim() : "";
+  return {
+    ...EMPTY_BUILDER_BRIEF,
+    businessName: safe(clientName, 300), niche: safe(project.brief.industry, 300),
+    audience: safe(project.brief.audience, 300), goal: safe(project.brief.goals, 300),
+    services: safe(project.brief.services, 2000), location: safe(project.brief.location, 300),
+    about: safe(project.brief.business, 2000), email: safe(project.brief.publicEmail, 300),
+    phone: safe(project.brief.publicPhone, 40),
+  };
+}
 
 /** An on-screen handoff, never an instruction to provision or spend. */
 export function deliveryPacket(project: Project, clientName: string): DeliveryPacket {

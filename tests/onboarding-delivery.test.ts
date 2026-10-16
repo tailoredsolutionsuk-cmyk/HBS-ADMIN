@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { deliveryPacket } from "../lib/onboarding/delivery.ts";
+import { deliveryPacket, suggestedBuilderBrief } from "../lib/onboarding/delivery.ts";
 import { EMPTY_BRIEF, type Project } from "../lib/onboarding/model.ts";
 
 const project: Project = {
@@ -42,4 +42,14 @@ test("structured intake identifies only remaining website and ad inputs", () => 
   assert.equal(packet.metaAds.budgetGbp, null);
   assert.ok(!packet.website.missing.some(item => item.includes("services")));
   assert.ok(!packet.metaAds.missing.some(item => item.includes("proposed ad budget")));
+});
+
+test("website draft prefill uses structured approved values without truncating long prose", () => {
+  const source = { ...project, brief: { ...project.brief, industry: "Automotive", services: "Mobile servicing", publicEmail: "hello@example.test", business: "x".repeat(2001) } };
+  const suggestion = suggestedBuilderBrief(source, "Example Motors");
+  assert.equal(suggestion.businessName, "Example Motors");
+  assert.equal(suggestion.niche, "Automotive");
+  assert.equal(suggestion.services, "Mobile servicing");
+  assert.equal(suggestion.email, "hello@example.test");
+  assert.equal(suggestion.about, "");
 });

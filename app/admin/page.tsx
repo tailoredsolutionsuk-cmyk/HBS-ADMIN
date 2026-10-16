@@ -11,6 +11,7 @@ import type { MetricsCrmData } from "./metrics-panel";
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
 const LeadFinderPanel = dynamic(() => import("./lead-finder-panel"), { loading: () => <DashboardSkeleton label="Opening Lead Finder" /> });
+const OnboardingPanel = dynamic(() => import("./onboarding-panel"), { loading: () => <DashboardSkeleton label="Opening client onboarding" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
@@ -72,6 +73,7 @@ export default function AdminPage() {
   const [activeView, setActiveView] = useState<AdminView>("Overview");
   const [builderStart, setBuilderStart] = useState(0);
   const [builderDirty, setBuilderDirty] = useState(false);
+  const [builderOpenSiteId, setBuilderOpenSiteId] = useState("");
   const [createSignal, setCreateSignal] = useState(0);
   const [clientSection, setClientSection] = useState<"directory" | "pipeline">("directory");
   const [collapsed, setCollapsed] = useState(false);
@@ -84,7 +86,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
 
-  const navigate = (view: AdminView, startWebsite = false) => {
+  const navigate = (view: AdminView, startWebsite = false, openSiteId = "") => {
     const targetView = view === "Pipeline" ? "Clients" : view;
     if (view === "Pipeline") {
       setClientSection("pipeline");
@@ -93,7 +95,7 @@ export default function AdminPage() {
     }
     if (activeView === "Websites" && targetView !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return;
     setBuilderDirty(false);
-    if (targetView === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
+    if (targetView === "Websites") { setBuilderStart(startWebsite ? (value) => value + 1 : 0); setBuilderOpenSiteId(openSiteId); }
     setActiveView(targetView);
   };
 
@@ -126,7 +128,8 @@ export default function AdminPage() {
 
   const module = (() => {
     if (activeView === "Overview") return <Overview websites={websites} activities={activities} stats={stats} crm={crm} loading={loading} onNavigate={navigate} onCreate={create} />;
-    if (activeView === "Websites") return <BuilderPanel startNew={builderStart} onDirty={setBuilderDirty} />;
+    if (activeView === "Websites") return <BuilderPanel startNew={builderStart} openSiteId={builderOpenSiteId} onDirty={setBuilderDirty} />;
+    if (activeView === "Onboarding") return <OnboardingPanel onOpenWebsite={siteId => navigate("Websites", false, siteId)} />;
     if (activeView === "JARVIS CEO") return <JarvisPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
