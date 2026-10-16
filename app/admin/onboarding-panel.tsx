@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { BRIEF_FIELDS, STATUS_LABELS, parseProject, type Project } from "../../lib/onboarding/model";
+import { deliveryPacket, type DeliveryStep } from "../../lib/onboarding/delivery";
 import { onboardingRequest } from "../../lib/onboarding/client";
 import "../onboarding.css";
 
@@ -10,6 +11,12 @@ type State = {
   permissions: { canCreate: boolean; canReview: boolean };
   automation: { enabled: boolean; pending: number }; truncated: boolean;
 };
+function Workstream({ title, missing, steps }: { title: string; missing: string[]; steps: DeliveryStep[] }) {
+  return <section className="onboarding-workstream"><h4>{title}</h4>
+    <strong>Inputs and decisions still needed</strong><ul>{missing.map(item => <li key={item}>{item}</li>)}</ul>
+    <strong>Delivery sequence</strong><ol>{steps.map(item => <li key={item.title}><b>{item.title}</b>: {item.outcome}<br /><small>Proof: {item.evidence}{item.ownerApproval ? " Owner approval required." : ""}</small></li>)}</ol>
+  </section>;
+}
 export default function OnboardingPanel({ initialClientId = "" }: { initialClientId?: string }) {
   const [data, setData] = useState<State | null>(null);
   const [error, setError] = useState(""); const [notice, setNotice] = useState("");
@@ -26,6 +33,7 @@ export default function OnboardingPanel({ initialClientId = "" }: { initialClien
   }
   useEffect(() => { void load(); }, []);
   const project = data?.projects.find(p => p.id === selected);
+  const packet = project?.status === "approved" ? deliveryPacket(project, data?.clients.find(c => c.id === project.client_id)?.business_name || "Client name needs confirmation") : null;
   const client = data?.clients.find(c => c.id === form.client_id);
   async function mutate(body: unknown, message: string) {
     setBusy(true); setError(""); setNotice("");
@@ -78,7 +86,11 @@ export default function OnboardingPanel({ initialClientId = "" }: { initialClien
             <label>Review note (required when requesting changes)<textarea maxLength={4000} value={note} onChange={e => setNote(e.target.value)} disabled={busy} /></label>
             <div className="onboarding-actions"><button disabled={busy} className="admin-primary-button" onClick={() => { if (window.confirm("Approve this brief? This does not build or publish a website.")) void mutate({action:"approve",id:project.id,revision:project.revision,note},"Brief approved. Website provisioning remains a separate step."); }}>Approve brief</button><button disabled={busy || !note.trim()} onClick={() => void mutate({action:"request_changes",id:project.id,revision:project.revision,note},"Changes requested. The client can edit the brief again in their portal.")}>Request changes</button></div>
           </div>}
-          {project.status === "approved" && <p className="onboarding-success">Brief approved. Continue the project checklist in Tasks; automatic website provisioning is not enabled.</p>}
+          {packet && <div className="onboarding-handoff"><p className="onboarding-success">Delivery handoff prepared from approved brief revision {packet.briefRevision}. Continue the checklist in Tasks.</p>
+            <p>This is a preparation plan. Website Studio still needs a reviewed builder brief; no website or Meta campaign has been created.</p>
+            <Workstream title="Website development" missing={packet.website.missing} steps={packet.website.steps} />
+            <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
+          </div>}
         </article> : <div className="onboarding-detail"><h3>Select a project</h3><p>View the brief and review its status here. Project checklists appear in Tasks.</p></div>}
       </div>
     </>}

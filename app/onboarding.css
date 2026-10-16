@@ -9,6 +9,10 @@
 .onboarding-project span,.onboarding-project small{font-size:13px;color:var(--onboarding-muted)}
 .onboarding-detail{border:1px solid var(--onboarding-border);padding:22px;border-radius:12px;min-width:0;margin-bottom:18px}
 .onboarding-detail dl{margin:22px 0}.onboarding-detail dt{font-size:12px;font-weight:700;margin-top:18px}.onboarding-detail dd{margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+.onboarding-handoff{margin-top:24px;border-top:1px solid var(--onboarding-border);padding-top:18px}
+.onboarding-workstream{margin-top:18px;padding:16px;border:1px solid var(--onboarding-border);border-radius:8px}
+.onboarding-workstream h4{margin:0 0 12px;font-size:17px}.onboarding-workstream ul,.onboarding-workstream ol{padding-left:22px;line-height:1.6}
+.onboarding-workstream li{margin:7px 0}.onboarding-workstream small{color:var(--onboarding-muted)}
 .onboarding-form{display:grid;gap:16px;margin:20px 0}.onboarding-form label{display:grid;gap:8px;font-size:14px;font-weight:600}
 .onboarding-form input,.onboarding-form select,.onboarding-form textarea{box-sizing:border-box;width:100%;max-width:100%;padding:12px;border:1px solid var(--onboarding-border);border-radius:7px;font:inherit;background:#fff;color:#243d33}.onboarding-form textarea{min-height:110px;resize:vertical}
 .onboarding-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.onboarding-actions button,.onboarding-error button{padding:11px 16px;border:1px solid var(--onboarding-border);border-radius:7px}
