@@ -19,7 +19,7 @@ Website production release, provider campaign creation, Meta launch and performa
 
 ## Next implementation slices
 
-1. Add structured intake fields for industry, services, location, public contact, offer, target geography, budget proposal and asset rights. Keep old briefs readable; require review of missing fields before creating provider resources.
+1. Structured client intake now includes industry, services, location, public contact, offer, target geography, budget proposal and asset rights. These fields are optional for older projects and do not constitute spending or asset-use approval. Review missing values before creating provider resources.
 2. Bind each approved onboarding project to one Website Studio site with a database uniqueness constraint and transactional, retry-safe creation. Generate a private draft, then keep preview, client review and production launch as separate steps.
 3. Add a versioned Meta campaign proposal record and preview. Prepare copy and creative from client-approved inputs. Do not infer a budget or promise results from the brief. Draft an access request for the client; sending it requires owner approval.
 4. After the preview and proposal workflow works, connect the client's Meta Business account with least-privilege access. Record account, page, pixel and ad-account IDs in server-side configuration. Create or update provider drafts only after exact owner approval; require a separate approval before activation or spend.

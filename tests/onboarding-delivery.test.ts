@@ -33,3 +33,13 @@ test("unapproved or incomplete brief cannot be described as approved or ready fo
   assert.ok(packet.website.missing.some(item => item.includes("services")));
   assert.ok(packet.metaAds.missing.some(item => item.includes("owner approval")));
 });
+
+test("structured intake identifies only remaining website and ad inputs", () => {
+  const packet = deliveryPacket({ ...project, brief: { ...project.brief, industry: "Automotive", services: "Servicing", location: "Leeds", publicEmail: "hello@example.test", offer: "Winter check", targetGeography: "Leeds", budgetProposal: "£300 monthly", assetRights: "Client owns supplied photography" } }, "Example Motors");
+  assert.equal(packet.website.industrySource, "Automotive");
+  assert.equal(packet.metaAds.offerSource, "Winter check");
+  assert.equal(packet.metaAds.budgetProposalSource, "£300 monthly");
+  assert.equal(packet.metaAds.budgetGbp, null);
+  assert.ok(!packet.website.missing.some(item => item.includes("services")));
+  assert.ok(!packet.metaAds.missing.some(item => item.includes("proposed ad budget")));
+});

@@ -17,6 +17,11 @@ export type DeliveryPacket = {
     audienceSource: string;
     goalsSource: string;
     pagesSource: string;
+    industrySource: string;
+    servicesSource: string;
+    locationSource: string;
+    publicEmailSource: string;
+    publicPhoneSource: string;
     brandSource: string;
     contentSource: string;
     domainSource: string;
@@ -28,6 +33,10 @@ export type DeliveryPacket = {
     objectiveSource: string;
     audienceSource: string;
     creativeSource: string;
+    offerSource: string;
+    geographySource: string;
+    budgetProposalSource: string;
+    assetRightsSource: string;
     budgetGbp: null;
     accountId: null;
     missing: string[];
@@ -43,8 +52,10 @@ export function deliveryPacket(project: Project, clientName: string): DeliveryPa
   const brief = project.brief;
   const approved = project.status === "approved";
   const websiteMissing = [
-    "Confirm the exact services, industry and location for Website Studio.",
-    "Confirm a public contact email or phone number.",
+    ...(!brief.industry ? ["Confirm the industry or niche for the website."] : []),
+    ...(!brief.services ? ["Confirm the exact services for Website Studio."] : []),
+    ...(!brief.location ? ["Confirm the business location and service area."] : []),
+    ...(!brief.publicEmail && !brief.publicPhone ? ["Confirm a public contact email or phone number."] : []),
     ...(!brief.brand ? ["Collect brand guidance and approved assets."] : []),
     ...(!brief.content ? ["Collect content, references and asset usage rights."] : []),
     ...(!brief.domain ? ["Confirm domain ownership and access arrangements."] : []),
@@ -52,6 +63,10 @@ export function deliveryPacket(project: Project, clientName: string): DeliveryPa
   const metaMissing = [
     "Request access to the client's Meta Business Portfolio, ad account and Page; record the billing owner.",
     "Agree the offer, target location, campaign objective and conversion event.",
+    ...(!brief.offer ? ["Confirm the offer to promote."] : []),
+    ...(!brief.targetGeography ? ["Confirm the campaign target geography."] : []),
+    ...(!brief.budgetProposal ? ["Collect a proposed ad budget for review; this is not spending approval."] : []),
+    ...(!brief.assetRights ? ["Confirm rights to use each proposed ad asset."] : []),
     "Confirm the budget and obtain owner approval before spending.",
     "Approve ad copy, creative assets, audience and landing page.",
     "Verify the landing page, conversion tracking and privacy requirements.",
@@ -66,6 +81,11 @@ export function deliveryPacket(project: Project, clientName: string): DeliveryPa
       audienceSource: brief.audience,
       goalsSource: brief.goals,
       pagesSource: brief.pages,
+      industrySource: brief.industry || "",
+      servicesSource: brief.services || "",
+      locationSource: brief.location || "",
+      publicEmailSource: brief.publicEmail || "",
+      publicPhoneSource: brief.publicPhone || "",
       brandSource: brief.brand,
       contentSource: brief.content,
       domainSource: brief.domain,
@@ -82,6 +102,10 @@ export function deliveryPacket(project: Project, clientName: string): DeliveryPa
       objectiveSource: brief.goals,
       audienceSource: brief.audience,
       creativeSource: brief.content,
+      offerSource: brief.offer || "",
+      geographySource: brief.targetGeography || "",
+      budgetProposalSource: brief.budgetProposal || "",
+      assetRightsSource: brief.assetRights || "",
       budgetGbp: null,
       accountId: null,
       missing: metaMissing,
