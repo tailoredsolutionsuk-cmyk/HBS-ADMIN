@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BRIEF_FIELDS, STATUS_LABELS, parseProject, type Project } from "../../lib/onboarding/model";
 import { deliveryPacket, suggestedBuilderBrief, type DeliveryStep } from "../../lib/onboarding/delivery";
 import type { Brief as BuilderBrief } from "../../lib/builder/model";
+import { suggestedMetaProposal, type MetaProposal } from "../../lib/onboarding/meta-proposal";
 import { onboardingRequest } from "../../lib/onboarding/client";
 import "../onboarding.css";
 
@@ -49,6 +50,43 @@ function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Pro
     <label>Style<select disabled={busy || Boolean(siteId)} value={brief.tone} onChange={event => setBrief({ ...brief, tone: event.target.value })}>{["Clean and professional", "Warm and approachable", "Bold and contemporary", "Elegant and established"].map(value => <option key={value}>{value}</option>)}</select></label>
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
     <div className="onboarding-actions"><button className="admin-primary-button" disabled={busy || Boolean(siteId)}>{busy ? "Saving…" : "Create or open private draft"}</button>{siteId && onOpenWebsite && <button type="button" onClick={() => onOpenWebsite(siteId)}>Open in Website Studio</button>}</div>
+  </form>;
+}
+function MetaProposalForm({ project, canEdit }: { project: Project; canEdit: boolean }) {
+  const [draft, setDraft] = useState<MetaProposal>(() => suggestedMetaProposal(project));
+  const [proposalRevision, setProposalRevision] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    let active = true;
+    void onboardingRequest<{ proposal: { revision: number; source_brief_revision: number; draft: MetaProposal } | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
+      .then(result => { if (!active || !result.proposal) return; if (result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; } setDraft(result.proposal.draft); setProposalRevision(result.proposal.revision); })
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : "Could not load the proposal."); });
+    return () => { active = false; };
+  }, [project.id, project.revision]);
+  const fields: { key: keyof MetaProposal; label: string; max: number }[] = [
+    { key: "objective", label: "Campaign objective", max: 500 }, { key: "offer", label: "Offer", max: 1000 },
+    { key: "audience", label: "Audience", max: 1000 }, { key: "geography", label: "Target geography", max: 500 },
+    { key: "landingPage", label: "Landing page HTTPS URL (after preview is ready)", max: 500 },
+    { key: "conversionEvent", label: "Conversion event", max: 500 }, { key: "budgetProposal", label: "Budget proposal, not approval", max: 500 },
+    { key: "primaryText", label: "Primary ad text", max: 2000 }, { key: "headline", label: "Ad headline", max: 300 },
+    { key: "creativeBrief", label: "Creative brief", max: 2000 }, { key: "assetRights", label: "Asset rights evidence", max: 1000 },
+    { key: "accessRequestDraft", label: "Meta access request draft (not sent)", max: 2000 },
+  ];
+  return <form className="onboarding-form onboarding-workstream" onSubmit={async event => {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await onboardingRequest<{ proposal: { revision: number; draft: MetaProposal } }>("/api/admin/onboarding/meta-proposal", { projectId: project.id, briefRevision: project.revision, expectedRevision: proposalRevision, draft });
+      setProposalRevision(result.proposal.revision); setDraft(result.proposal.draft);
+      setNotice(`Meta campaign proposal revision ${result.proposal.revision} saved for review. No request was sent and no ad was created.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save proposal."); }
+    finally { setBusy(false); }
+  }}>
+    <h4>Meta Ads proposal</h4><p>Draft campaign details and an access request. A proposed budget is information for review, not permission to spend.</p>
+    {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || !canEdit} value={draft[field.key]} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} /></label>)}
+    {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
+    <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}</span>}</div>
   </form>;
 }
 export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }: { initialClientId?: string; onOpenWebsite?: (siteId: string) => void }) {
@@ -125,6 +163,7 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
             <Workstream title="Website development" missing={packet.website.missing} steps={packet.website.steps} />
             {data.permissions.canStartWebsite && <WebsiteDraftForm key={project.id} project={project} clientName={packet.website.clientName} onOpenWebsite={onOpenWebsite} />}
             <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
+            <MetaProposalForm key={project.id} project={project} canEdit={data.permissions.canReview} />
           </div>}
         </article> : <div className="onboarding-detail"><h3>Select a project</h3><p>View the brief and review its status here. Project checklists appear in Tasks.</p></div>}
       </div>
