@@ -27,8 +27,10 @@ grant select, insert, update on public.onboarding_meta_proposals, public.onboard
 create or replace function public.onboarding_meta_snapshot() returns trigger
 language plpgsql security invoker set search_path = '' as $$
 begin
-  if tg_op = 'UPDATE' and new.revision <> old.revision + 1 then
-    raise exception 'Invalid Meta proposal revision' using errcode = '40001';
+  if tg_op = 'UPDATE' then
+    if new.revision <> old.revision + 1 then
+      raise exception 'Invalid Meta proposal revision' using errcode = '40001';
+    end if;
   end if;
   insert into public.onboarding_meta_proposal_versions
     (project_id, revision, source_brief_revision, draft, saved_by)
