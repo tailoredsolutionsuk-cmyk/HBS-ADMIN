@@ -35,10 +35,10 @@ export async function POST(request: Request) {
     });
     if (insertError && insertError.code !== "23505") throw new OnboardingError("Could not save the private website draft. Check Website Studio setup.", 503);
     const { data: site, error: siteError } = await sites.from("builder_sites")
-      .select("id,owner_id,client_id,revision,published_revision").eq("id", id).maybeSingle();
+      .select("id,owner_id,client_id,revision,published_revision,preview_revision,preview_url").eq("id", id).maybeSingle();
     if (siteError || !site) throw new OnboardingError("Could not verify the saved website draft.", 503);
     if (site.owner_id !== actor || site.client_id !== project.client_id) throw new OnboardingError("A website with this project ID belongs to a different workspace. Contact the HBS owner.", 409);
-    return NextResponse.json({ siteId: site.id, revision: site.revision, alreadyExisted: Boolean(insertError), published: site.published_revision !== null }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ siteId: site.id, revision: site.revision, alreadyExisted: Boolean(insertError), previewReady: site.preview_revision === site.revision && Boolean(site.preview_url), published: site.published_revision !== null }, { headers: { "Cache-Control": "no-store" } });
   } catch (cause) {
     return NextResponse.json({ error: cause instanceof OnboardingError ? cause.message : "Website draft is temporarily unavailable." }, { status: cause instanceof OnboardingError ? cause.status : 503, headers: { "Cache-Control": "no-store" } });
   }

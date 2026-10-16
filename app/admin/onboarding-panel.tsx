@@ -22,6 +22,8 @@ function Workstream({ title, missing, steps }: { title: string; missing: string[
 function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Project; clientName: string; onOpenWebsite?: (siteId: string) => void }) {
   const [brief, setBrief] = useState<BuilderBrief>(() => suggestedBuilderBrief(project, clientName));
   const [siteId, setSiteId] = useState("");
+  const [siteRevision, setSiteRevision] = useState<number | null>(null);
+  const [previewRequested, setPreviewRequested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -39,9 +41,11 @@ function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Pro
   return <form className="onboarding-form onboarding-workstream" onSubmit={async event => {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
-      const result = await onboardingRequest<{ siteId: string; alreadyExisted: boolean }>("/api/admin/onboarding/website-draft", { projectId: project.id, briefRevision: project.revision, builderBrief: brief });
+      const result = await onboardingRequest<{ siteId: string; revision: number; alreadyExisted: boolean; previewReady: boolean }>("/api/admin/onboarding/website-draft", { projectId: project.id, briefRevision: project.revision, builderBrief: brief });
       setSiteId(result.siteId);
-      setNotice(result.alreadyExisted ? "Existing private draft found. Your form did not overwrite it." : "Private website draft saved. Review and build its preview in Website Studio.");
+      setSiteRevision(result.revision);
+      setPreviewRequested(result.previewReady);
+      setNotice(result.previewReady ? "Current private preview is ready. Open it in Website Studio." : result.alreadyExisted ? "Existing private draft found. Your form did not overwrite it." : "Private website draft saved. Review and build its preview in Website Studio.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create the draft."); }
     finally { setBusy(false); }
   }}>
@@ -49,7 +53,13 @@ function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Pro
     {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 300 ? 3 : 1} maxLength={field.max} required={field.required} disabled={busy || Boolean(siteId)} value={brief[field.key]} onChange={event => setBrief({ ...brief, [field.key]: event.target.value })} /></label>)}
     <label>Style<select disabled={busy || Boolean(siteId)} value={brief.tone} onChange={event => setBrief({ ...brief, tone: event.target.value })}>{["Clean and professional", "Warm and approachable", "Bold and contemporary", "Elegant and established"].map(value => <option key={value}>{value}</option>)}</select></label>
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
-    <div className="onboarding-actions"><button className="admin-primary-button" disabled={busy || Boolean(siteId)}>{busy ? "Saving…" : "Create or open private draft"}</button>{siteId && onOpenWebsite && <button type="button" onClick={() => onOpenWebsite(siteId)}>Open in Website Studio</button>}</div>
+    <div className="onboarding-actions"><button className="admin-primary-button" disabled={busy || Boolean(siteId)}>{busy ? "Saving…" : "Create or open private draft"}</button>{siteId && onOpenWebsite && <button type="button" onClick={() => onOpenWebsite(siteId)}>Open in Website Studio</button>}{siteId && siteRevision !== null && <button type="button" disabled={busy || previewRequested} onClick={async () => {
+      if (!window.confirm("Build a private hosted preview for this saved website revision? This can create a GitHub repository and Vercel project and use your hosting allowance. Nothing will be published to the client's live domain.")) return;
+      setBusy(true); setError(""); setNotice("");
+      try { await onboardingRequest("/api/admin/builder", { action: "preview", id: siteId, revision: siteRevision, requestId: crypto.randomUUID() }); setPreviewRequested(true); setNotice("Private preview job queued. Open Website Studio to check its status and review the result."); }
+      catch (cause) { setError(cause instanceof Error ? cause.message : "Could not queue the preview."); }
+      finally { setBusy(false); }
+    }}>Build private preview</button>}</div>
   </form>;
 }
 type SavedMetaProposal = { revision: number; source_brief_revision: number; draft: MetaProposal; reviewed_revision: number | null; review_decision: "approved" | "changes_requested" | null; review_note: string | null };
