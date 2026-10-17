@@ -3,6 +3,7 @@ import { builderDB, withSiteLock } from './server';
 import { BuilderError, providers, resourceName } from './providers.ts';
 import { parseDocument } from './model.ts';
 import { builderModel, generateWebsiteEdit } from './ai';
+import { assertOnboardingReleaseReady } from '../onboarding/release-server';
 
 export type JobKind = 'setup' | 'ai' | 'preview' | 'publish';
 type Job = { id:string; site_id:string; owner_id:string; revision:number; kind:JobKind; attempts:number; polls:number; payload:{ prompt?:string; deploymentId?:string }; lease_token:string; deployment_id:string|null; generation_id:string|null; commit_sha:string|null };
@@ -91,6 +92,8 @@ async function execute(job:Job) {
           if(version.error||!version.data.commit_sha) throw new BuilderError('The preview repository checkpoint is missing.',409);
           await progress('Publishing the exact preview you approved');
           await checkpoint();
+          // Approval can change after the publish job was queued. Recheck before the external release.
+          await assertOnboardingReleaseReady(site,job.owner_id);
           await api.promote(site.id,job.revision,site,site.preview_deployment!,version.data.commit_sha);
           await updateJob({deployment_id:site.preview_deployment,status:'waiting',progress:'Confirming production routing',available_at:new Date(Date.now()+5000).toISOString(),lease_token:null,lease_until:null});return;
         }
