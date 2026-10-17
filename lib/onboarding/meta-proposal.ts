@@ -37,7 +37,7 @@ export function parseMetaProposal(value: unknown): MetaProposal {
 }
 
 export function proposalReviewGaps(draft: MetaProposal): (keyof MetaProposal)[] {
-  const required: (keyof MetaProposal)[] = ["objective", "offer", "audience", "geography", "landingPage", "conversionEvent", "budgetProposal", "primaryText", "headline", "creativeBrief", "assetRights"];
+  const required: (keyof MetaProposal)[] = ["objective", "offer", "audience", "geography", "landingPage", "conversionEvent", "budgetProposal", "primaryText", "headline", "creativeBrief", "assetRights", "accessRequestDraft"];
   return required.filter(key => !draft[key]);
 }
 

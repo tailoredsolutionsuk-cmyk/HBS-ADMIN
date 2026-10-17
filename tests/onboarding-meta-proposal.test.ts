@@ -24,6 +24,7 @@ test("Meta proposal starts with sourced fields and no invented copy or landing U
 test("owner review requires an exact, complete proposal but does not treat budget as spending approval", () => {
   const draft = { ...suggestedMetaProposal(project), landingPage: "https://example.test/preview", conversionEvent: "Lead", primaryText: "Book a check", headline: "Winter check", creativeBrief: "Use client photo", assetRights: "Client owns photo" };
   assert.deepEqual(proposalReviewGaps(draft), []);
+  assert.ok(proposalReviewGaps({ ...draft, accessRequestDraft: "" }).includes("accessRequestDraft"));
   assert.equal(parseMetaProposal(draft).budgetProposal, "£300 per month");
   assert.equal(landingMatchesPreview("https://preview.example.test/contact", "https://preview.example.test/"), true);
   assert.equal(landingMatchesPreview("https://other.example.test/contact", "https://preview.example.test/"), false);
