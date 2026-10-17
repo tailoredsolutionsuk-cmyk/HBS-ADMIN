@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { onboardingAdmin, databaseError, mutationLimit, readMutation } from "../../../../../lib/onboarding/server";
-import { OnboardingError, projectId, revision, text } from "../../../../../lib/onboarding/model";
+import { OnboardingError, includesMetaAds, projectId, revision, text } from "../../../../../lib/onboarding/model";
 import { landingMatchesPreview, MetaProposalError, parseMetaProposal, proposalReviewGaps } from "../../../../../lib/onboarding/meta-proposal";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +8,11 @@ const json = (value: unknown, status = 200) => NextResponse.json(value, { status
 const fail = (cause: unknown) => json({ error: cause instanceof OnboardingError || cause instanceof MetaProposalError ? cause.message : "Meta proposal is temporarily unavailable." }, cause instanceof OnboardingError ? cause.status : cause instanceof MetaProposalError ? 400 : 503);
 
 async function approvedProject(db: Awaited<ReturnType<typeof onboardingAdmin>>["db"], id: string) {
-  const { data, error } = await db.from("onboarding_projects").select("id,client_id,status,revision").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("onboarding_projects").select("id,client_id,status,revision,service").eq("id", id).maybeSingle();
   databaseError(error);
   if (!data) throw new OnboardingError("Onboarding project not found.", 404);
   if (data.status !== "approved") throw new OnboardingError("Approve the client brief before preparing Meta Ads.", 409);
+  if (!includesMetaAds(data.service)) throw new OnboardingError("This project does not include Meta Ads.", 409);
   return data;
 }
 

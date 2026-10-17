@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { BRIEF_FIELDS, STATUS_LABELS, parseProject, type Project } from "../../lib/onboarding/model";
+import { BRIEF_FIELDS, STATUS_LABELS, includesMetaAds, parseProject, type Project } from "../../lib/onboarding/model";
 import { deliveryPacket, suggestedBuilderBrief, type DeliveryStep } from "../../lib/onboarding/delivery";
 import type { Brief as BuilderBrief } from "../../lib/builder/model";
 import { suggestedMetaProposal, type MetaProposal } from "../../lib/onboarding/meta-proposal";
@@ -164,7 +164,7 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
   const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(Boolean(initialClientId));
   const [requestId, setRequestId] = useState("");
-  const [form, setForm] = useState({ client_id: initialClientId, name: "", service: "Website build", target_date: "" });
+  const [form, setForm] = useState({ client_id: initialClientId, name: "", service: "Website and Meta Ads", target_date: "" });
   const [selected, setSelected] = useState<string | null>(null); const [note, setNote] = useState("");
   async function load() {
     setLoading(true);
@@ -205,7 +205,7 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
         <h3>Start a project</h3>
         <label>Client<select required disabled={busy || Boolean(requestId)} value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}><option value="">Select a client</option>{data.clients.map(c => <option key={c.id} value={c.id}>{c.business_name}</option>)}</select></label>
         <label>Project name<input required maxLength={160} disabled={busy || Boolean(requestId)} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Example: UTX website refresh" /></label>
-        <label>Service<input required maxLength={100} disabled={busy || Boolean(requestId)} value={form.service} onChange={e => setForm({ ...form, service: e.target.value })} /></label>
+        <label>Service<input required maxLength={100} list="onboarding-services" disabled={busy || Boolean(requestId)} value={form.service} onChange={e => setForm({ ...form, service: e.target.value })} /><datalist id="onboarding-services"><option value="Website and Meta Ads" /><option value="Website build" /></datalist><small>Choose “Website and Meta Ads” to enable the combined client review and release gates.</small></label>
         <label>Target launch date (optional)<input type="date" disabled={busy || Boolean(requestId)} value={form.target_date} onChange={e => setForm({ ...form, target_date: e.target.value })} /></label>
         {client && <p className="onboarding-info">{client.portal_enabled && client.portal_email ? `Portal access enabled for ${client.portal_email}. No email will be sent.` : "Portal access is not ready. Enable the correct email in Clients before sharing the portal link."}</p>}
         {requestId && !busy && <p>The previous attempt may have saved. Retry with these same details; duplicate tasks will not be created.</p>}
@@ -231,9 +231,9 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
             <p>First-phase outcome: a private website preview and a Meta campaign proposal for review. Review the Website Studio brief below before creating a draft. Building a hosted preview is a separate step; no Meta campaign is created.</p>
             <Workstream title="Website development" missing={packet.website.missing} steps={packet.website.steps} />
             {data.permissions.canStartWebsite && <WebsiteDraftForm key={project.id} project={project} clientName={packet.website.clientName} onOpenWebsite={onOpenWebsite} />}
-            <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
+            {includesMetaAds(project.service) && <><Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
             <MetaProposalForm key={project.id} project={project} canEdit={data.permissions.canReview} canOwnerReview={data.permissions.canStartWebsite} />
-            <ReviewPacketPanel key={`${project.id}-review`} project={project} canShare={data.permissions.canStartWebsite} />
+            <ReviewPacketPanel key={`${project.id}-review`} project={project} canShare={data.permissions.canStartWebsite} /></>}
           </div>}
         </article> : <div className="onboarding-detail"><h3>Select a project</h3><p>View the brief and review its status here. Project checklists appear in Tasks.</p></div>}
       </div>

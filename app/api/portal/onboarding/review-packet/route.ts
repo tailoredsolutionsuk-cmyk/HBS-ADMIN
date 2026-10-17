@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { portalAccount } from "../../../../../lib/portal/server";
 import { databaseError, mutationLimit, readMutation } from "../../../../../lib/onboarding/server";
-import { OnboardingError, projectId, text } from "../../../../../lib/onboarding/model";
+import { OnboardingError, includesMetaAds, projectId, text } from "../../../../../lib/onboarding/model";
 import { packetStillCurrent } from "../../../../../lib/onboarding/review-packet";
 import { PAGE_KEYS, parseDocument, renderPage, type PageKey } from "../../../../../lib/builder/model";
 
@@ -11,9 +11,10 @@ const fail = (cause: unknown) => json({ error: cause instanceof OnboardingError 
 
 async function currentPacket(account: NonNullable<Awaited<ReturnType<typeof portalAccount>>>, id: string) {
   const { db, client } = account;
-  const project = await db.from("onboarding_projects").select("id,client_id,status,revision").eq("id", id).eq("client_id", client.id).maybeSingle();
+  const project = await db.from("onboarding_projects").select("id,client_id,status,revision,service").eq("id", id).eq("client_id", client.id).maybeSingle();
   databaseError(project.error);
   if (!project.data) throw new OnboardingError("Project not found.", 404);
+  if (!includesMetaAds(project.data.service)) return null;
   const [site, proposal, packets] = await Promise.all([
     db.from("builder_sites").select("id,client_id,revision,preview_revision,preview_deployment,preview_url,draft").eq("id", id).eq("client_id", client.id).maybeSingle(),
     db.from("onboarding_meta_proposals").select("project_id,source_brief_revision,revision,reviewed_revision,review_decision,draft").eq("project_id", id).maybeSingle(),

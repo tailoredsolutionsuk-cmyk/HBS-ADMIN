@@ -20,3 +20,7 @@ export function packetStillCurrent(project: ReviewProject, site: ReviewSite | nu
     packet.site_revision === site!.revision && packet.preview_deployment === site!.preview_deployment &&
     packet.preview_url === site!.preview_url && packet.proposal_revision === proposal!.revision;
 }
+
+export function clientApprovedCurrentPacket(project: ReviewProject, site: ReviewSite | null, proposal: ReviewProposal | null, packet: ReviewPacket | null, latestDecision: string | null): boolean {
+  return Boolean(packet && latestDecision === "approved" && packetStillCurrent(project, site, proposal, packet));
+}

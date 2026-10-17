@@ -32,6 +32,7 @@ export const STATUS_LABELS: Record<ProjectStatus, string> = {
   collecting: "Waiting for client brief", submitted: "Ready for review",
   changes_requested: "Changes requested", approved: "Brief approved",
 };
+export function includesMetaAds(service: string): boolean { return /\bmeta\s+ads\b/i.test(service); }
 export function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new OnboardingError("Invalid request.");
   return value as Record<string, unknown>;

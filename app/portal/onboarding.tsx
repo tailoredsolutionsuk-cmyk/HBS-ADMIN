@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { BRIEF_FIELDS, EMPTY_BRIEF, STATUS_LABELS, editableBrief, type Brief, type Project } from "../../lib/onboarding/model";
+import { BRIEF_FIELDS, EMPTY_BRIEF, STATUS_LABELS, editableBrief, includesMetaAds, type Brief, type Project } from "../../lib/onboarding/model";
 import { onboardingRequest } from "../../lib/onboarding/client";
 import { PAGE_KEYS, PAGE_NAMES, type PageKey } from "../../lib/builder/model";
 import type { MetaProposal } from "../../lib/onboarding/meta-proposal";
@@ -96,7 +96,7 @@ export default function PortalOnboarding() {
     {error && <p role="alert" className="onboarding-error">{error} <button onClick={() => void load()}>Try again</button></p>}
     {!loading && !error && !projects.length && <p>Your HBS team will add your project here when onboarding starts.</p>}
     {truncated && <p>Showing your latest 100 projects. Contact HBS for older projects.</p>}
-    {projects.map(project => <div key={project.id}><BriefForm project={project} onSaved={load} />{project.status === "approved" && <PortalReviewPacket project={project} />}</div>)}
+    {projects.map(project => <div key={project.id}><BriefForm project={project} onSaved={load} />{project.status === "approved" && includesMetaAds(project.service) && <PortalReviewPacket project={project} />}</div>)}
   </section>;
 }
 

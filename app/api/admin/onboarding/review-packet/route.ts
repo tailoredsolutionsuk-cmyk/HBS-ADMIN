@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { onboardingAdmin, databaseError, mutationLimit, readMutation } from "../../../../../lib/onboarding/server";
-import { OnboardingError, projectId, revision, text } from "../../../../../lib/onboarding/model";
+import { OnboardingError, includesMetaAds, projectId, revision, text } from "../../../../../lib/onboarding/model";
 import { packetStillCurrent, reviewArtifactsReady, type ReviewPacket } from "../../../../../lib/onboarding/review-packet";
 
 export const dynamic = "force-dynamic";
@@ -9,13 +9,14 @@ const fail = (cause: unknown) => json({ error: cause instanceof OnboardingError 
 
 async function state(db: Awaited<ReturnType<typeof onboardingAdmin>>["db"], id: string) {
   const [project, site, proposal, latest] = await Promise.all([
-    db.from("onboarding_projects").select("id,client_id,status,revision").eq("id", id).maybeSingle(),
+    db.from("onboarding_projects").select("id,client_id,status,revision,service").eq("id", id).maybeSingle(),
     db.from("builder_sites").select("id,client_id,revision,preview_revision,preview_deployment,preview_url").eq("id", id).maybeSingle(),
     db.from("onboarding_meta_proposals").select("project_id,source_brief_revision,revision,reviewed_revision,review_decision,draft").eq("project_id", id).maybeSingle(),
     db.from("onboarding_review_packets").select("id,project_id,brief_revision,site_revision,preview_deployment,preview_url,proposal_revision,released_at").eq("project_id", id).order("event_no", { ascending: false }).limit(1),
   ]);
   [project.error, site.error, proposal.error, latest.error].forEach(databaseError);
   if (!project.data) throw new OnboardingError("Onboarding project not found.", 404);
+  if (!includesMetaAds(project.data.service)) throw new OnboardingError("This project does not include Meta Ads review.", 409);
   const packet = latest.data?.[0] || null;
   const current = packet ? packetStillCurrent(project.data, site.data, proposal.data, packet) : false;
   return { project: project.data, site: site.data, proposal: proposal.data, packet, current, ready: reviewArtifactsReady(project.data, site.data, proposal.data) };

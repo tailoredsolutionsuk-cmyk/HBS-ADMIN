@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseProject, parseBrief, projectId, revision, editableBrief, EMPTY_BRIEF } from "../lib/onboarding/model.ts";
+import { parseProject, parseBrief, projectId, revision, editableBrief, EMPTY_BRIEF, includesMetaAds } from "../lib/onboarding/model.ts";
 test("project validation strips unexpected infrastructure properties", () => {
   const parsed = parseProject({ client_id: "utx", name: " New site ", service: "Website", target_date: "", role: "owner", repo: "admin" });
   assert.deepEqual(parsed, {client_id:"utx",name:"New site",service:"Website",target_date:null});
@@ -22,6 +22,8 @@ test("partial drafts save but submission requires the four core fields", () => {
   assert.throws(() => parseBrief({...brief,goals:[]},true));
   assert.equal(parseBrief({...brief,industry:"Automotive",publicEmail:"hello@example.test"},true).industry,"Automotive");
   assert.throws(() => parseBrief({...brief,publicEmail:"not-an-email"},true));
+  assert.equal(includesMetaAds("Website and Meta Ads"), true);
+  assert.equal(includesMetaAds("Website build"), false);
 });
 test("IDs and revisions are strict, only draft states permit client edits", () => {
   assert.equal(projectId("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");

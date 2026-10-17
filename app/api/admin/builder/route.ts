@@ -6,6 +6,7 @@ import { domainName } from '../../../../lib/builder/public-model.ts';
 import { assertIdle, enqueue, runJobs, type JobKind } from '../../../../lib/builder/jobs';
 import { builderModel, generationInput } from '../../../../lib/builder/ai';
 import { createClient } from '../../../../lib/supabase/server';
+import { assertOnboardingReleaseReady } from '../../../../lib/onboarding/release-server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -108,6 +109,7 @@ export async function POST(request: Request) {
         }
         if(kind==='publish') {
           if(body.reviewed!==true||site.preview_revision!==site.revision||body.deploymentId!==site.preview_deployment||!site.preview_url) throw new BuilderError('Open and approve the ready preview for this saved draft before publishing.',409);
+          await assertOnboardingReleaseReady(site, owner);
           payload.deploymentId=site.preview_deployment!;
         }
         await enqueue(id,owner,site.revision,kind,String(body.requestId||''),payload);
