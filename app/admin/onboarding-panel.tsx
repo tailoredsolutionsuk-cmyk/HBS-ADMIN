@@ -111,6 +111,15 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
     <h4>Meta Ads proposal</h4><p>Draft campaign details and an access request. A proposed budget is information for review, not permission to spend.</p>
     {loading && <p role="status">Loading saved proposal…</p>}
     {fields.map(field => <label key={field.key}>{field.label}<textarea rows={field.max > 500 ? 3 : 1} maxLength={field.max} disabled={busy || loading || !canEdit} value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setDirty(true); }} /></label>)}
+    {canOwnerReview && <div><button type="button" disabled={busy || loading} onClick={async () => {
+      if (!window.confirm("Generate one Meta copy draft using your direct OpenAI API credits? The approved brief and proposal inputs will be sent to OpenAI. Nothing will be saved, shared or published automatically.")) return;
+      setBusy(true); setError(""); setNotice("");
+      try {
+        const result = await onboardingRequest<{ proposal: MetaProposal; model: string }>("/api/admin/onboarding/meta-proposal/generate", { projectId: project.id, briefRevision: project.revision, draft, aiConsent: true });
+        setDraft(result.proposal); setDirty(true); setNotice(`Copy drafted with ${result.model}. Review every claim and save a proposal revision before sharing.`);
+      } catch (cause) { setError(cause instanceof Error ? cause.message : "AI copy draft could not be generated."); }
+      finally { setBusy(false); }
+    }}>Draft ad copy with JARVIS</button><p>Only the approved brief and this proposal are sent. AI text is a draft; check claims, asset rights and the offer before saving.</p></div>}
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
     <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy || loading || (proposalRevision !== null && !dirty)}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}{dirty ? " · Unsaved edits" : ""}</span>}</div>
     {review?.review_decision && <p className="onboarding-info">Owner review: {review.review_decision === "approved" ? "Approved for client review" : "Changes requested"} on revision {review.reviewed_revision}{review.reviewed_revision !== proposalRevision ? " · A newer revision needs review" : ""}{review.review_note ? ` — ${review.review_note}` : ""}. This is not approval to spend or launch ads.</p>}
