@@ -63,6 +63,7 @@ function WebsiteDraftForm({ project, clientName, onOpenWebsite }: { project: Pro
   </form>;
 }
 type SavedMetaProposal = { revision: number; source_brief_revision: number; draft: MetaProposal; reviewed_revision: number | null; review_decision: "approved" | "changes_requested" | null; review_note: string | null };
+type MetaAiRun = { id: string; model: string; status: "requested" | "succeeded" | "failed"; error_code: string | null; input_tokens: number | null; output_tokens: number | null; requested_at: string };
 function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Project; canEdit: boolean; canOwnerReview: boolean }) {
   const [draft, setDraft] = useState<MetaProposal>(() => suggestedMetaProposal(project));
   const [proposalRevision, setProposalRevision] = useState<number | null>(null);
@@ -73,11 +74,13 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [aiRuns, setAiRuns] = useState<MetaAiRun[]>([]);
   useEffect(() => {
     let active = true;
-    void onboardingRequest<{ proposal: SavedMetaProposal | null; previewUrl: string | null }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
+    void onboardingRequest<{ proposal: SavedMetaProposal | null; previewUrl: string | null; aiRuns: MetaAiRun[] }>(`/api/admin/onboarding/meta-proposal?projectId=${encodeURIComponent(project.id)}`)
       .then(result => {
         if (!active) return;
+        setAiRuns(result.aiRuns);
         if (result.proposal?.source_brief_revision !== undefined && result.proposal.source_brief_revision !== project.revision) { setError("This proposal is based on an older brief. Request a new review before editing."); return; }
         const source = result.proposal?.draft || suggestedMetaProposal(project);
         const needsLandingPage = Boolean(result.previewUrl && !source.landingPage);
@@ -115,11 +118,13 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
       if (!window.confirm("Generate one Meta copy draft using your direct OpenAI API credits? The approved brief and proposal inputs will be sent to OpenAI. Nothing will be saved, shared or published automatically.")) return;
       setBusy(true); setError(""); setNotice("");
       try {
-        const result = await onboardingRequest<{ proposal: MetaProposal; model: string }>("/api/admin/onboarding/meta-proposal/generate", { projectId: project.id, briefRevision: project.revision, draft, aiConsent: true });
+        const result = await onboardingRequest<{ proposal: MetaProposal; model: string; auditId: string; usage: { inputTokens?: number; outputTokens?: number } }>("/api/admin/onboarding/meta-proposal/generate", { projectId: project.id, briefRevision: project.revision, draft, aiConsent: true });
         setDraft(result.proposal); setDirty(true); setNotice(`Copy drafted with ${result.model}. Review every claim and save a proposal revision before sharing.`);
+        setAiRuns(previous => [{ id: result.auditId, model: result.model, status: "succeeded" as const, error_code: null, input_tokens: result.usage.inputTokens ?? null, output_tokens: result.usage.outputTokens ?? null, requested_at: new Date().toISOString() }, ...previous].slice(0, 10));
       } catch (cause) { setError(cause instanceof Error ? cause.message : "AI copy draft could not be generated."); }
       finally { setBusy(false); }
     }}>Draft ad copy with JARVIS</button><p>Only the approved brief and this proposal are sent. AI text is a draft; check claims, asset rights and the offer before saving.</p></div>}
+    {canOwnerReview && aiRuns.length > 0 && <details><summary>Recent JARVIS copy requests ({aiRuns.length})</summary><ul>{aiRuns.map(run => <li key={run.id}>{new Date(run.requested_at).toLocaleString()}: {run.status} · {run.model}{run.status === "succeeded" ? ` · ${run.input_tokens ?? "?"} input / ${run.output_tokens ?? "?"} output tokens` : run.error_code ? ` · ${run.error_code}` : ""}</li>)}</ul></details>}
     {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
     <div className="onboarding-actions">{canEdit && <button className="admin-primary-button" disabled={busy || loading || (proposalRevision !== null && !dirty)}>{busy ? "Saving…" : proposalRevision === null ? "Save first proposal" : "Save new proposal revision"}</button>}{proposalRevision !== null && <span>Saved revision {proposalRevision}{dirty ? " · Unsaved edits" : ""}</span>}</div>
     {review?.review_decision && <p className="onboarding-info">Owner review: {review.review_decision === "approved" ? "Approved for client review" : "Changes requested"} on revision {review.reviewed_revision}{review.reviewed_revision !== proposalRevision ? " · A newer revision needs review" : ""}{review.review_note ? ` — ${review.review_note}` : ""}. This is not approval to spend or launch ads.</p>}

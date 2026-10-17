@@ -36,12 +36,29 @@ create table if not exists public.onboarding_meta_reviews (
   reviewed_at timestamptz not null
 );
 create index if not exists onboarding_meta_reviews_project_idx on public.onboarding_meta_reviews(project_id, reviewed_at desc);
+create table if not exists public.onboarding_meta_ai_runs (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.onboarding_projects(id),
+  source_brief_revision integer not null check (source_brief_revision >= 0),
+  requested_by uuid not null references auth.users(id),
+  model text not null check (char_length(model) between 1 and 120),
+  input_sha256 text not null check (input_sha256 ~ '^[0-9a-f]{64}$'),
+  status text not null default 'requested' check (status in ('requested', 'succeeded', 'failed')),
+  error_code text check (char_length(error_code) <= 80),
+  input_tokens integer check (input_tokens >= 0),
+  output_tokens integer check (output_tokens >= 0),
+  requested_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+create index if not exists onboarding_meta_ai_runs_project_idx on public.onboarding_meta_ai_runs(project_id, requested_at desc);
 alter table public.onboarding_meta_proposals enable row level security;
 alter table public.onboarding_meta_proposal_versions enable row level security;
 alter table public.onboarding_meta_reviews enable row level security;
-revoke all on public.onboarding_meta_proposals, public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews from public, anon, authenticated;
+alter table public.onboarding_meta_ai_runs enable row level security;
+revoke all on public.onboarding_meta_proposals, public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews, public.onboarding_meta_ai_runs from public, anon, authenticated;
 grant select, insert, update on public.onboarding_meta_proposals to service_role;
 grant select, insert on public.onboarding_meta_proposal_versions, public.onboarding_meta_reviews to service_role;
+grant select, insert, update on public.onboarding_meta_ai_runs to service_role;
 
 create or replace function public.onboarding_meta_snapshot() returns trigger
 language plpgsql security invoker set search_path = '' as $$

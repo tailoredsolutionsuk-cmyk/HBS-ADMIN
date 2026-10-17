@@ -18,7 +18,7 @@ async function approvedProject(db: Awaited<ReturnType<typeof onboardingAdmin>>["
 
 export async function GET(request: Request) {
   try {
-    const { db } = await onboardingAdmin();
+    const { db, role } = await onboardingAdmin();
     const id = projectId(new URL(request.url).searchParams.get("projectId"));
     const project = await approvedProject(db, id);
     const { data, error } = await db.from("onboarding_meta_proposals")
@@ -28,7 +28,11 @@ export async function GET(request: Request) {
       .select("client_id,revision,preview_revision,preview_url").eq("id", id).maybeSingle();
     databaseError(siteError);
     const previewUrl = site && site.client_id === project.client_id && site.preview_revision === site.revision ? site.preview_url : null;
-    return json({ proposal: data, briefRevision: project.revision, previewUrl });
+    const aiRuns = role === "owner" ? await db.from("onboarding_meta_ai_runs")
+      .select("id,model,status,error_code,input_tokens,output_tokens,requested_at")
+      .eq("project_id", id).order("requested_at", { ascending: false }).limit(10) : null;
+    if (aiRuns) databaseError(aiRuns.error);
+    return json({ proposal: data, briefRevision: project.revision, previewUrl, aiRuns: aiRuns?.data ?? [] });
   } catch (cause) { return fail(cause); }
 }
 
