@@ -29,4 +29,6 @@ Website production release, provider campaign creation, Meta launch and performa
 
 The current Website Studio AI editor still uses Vercel AI Gateway (`BUILDER_AI_MODEL`); JARVIS chat's direct OpenAI setting does not switch it. Verify or migrate builder AI access before relying on automated content generation. Meta account integration, campaign drafting in Meta, spend controls and provider launch are not connected yet.
 
+For database acceptance, apply the two SQL migrations in order to an isolated test database and run `tests/client-delivery.integration.sql`. Its synthetic users, client and project are enclosed in a rollback transaction. It checks proposal snapshots, review history, AI-request audit metadata, latest client decision, packet uniqueness and browser-denied table grants. API and portal checks still require a preview environment pointed at that test database.
+
 For the first client, use a test project and reviewed assets. Record the intended Meta account and owner-approved spending limit before any provider write. Keep client data, API credentials and ad-account tokens out of this repository.
