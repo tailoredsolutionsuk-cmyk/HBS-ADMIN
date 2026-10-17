@@ -13,7 +13,7 @@ export async function GET() {
     return response({
       projects: projects.data, clients: clients.data,
       truncated: (projects.count ?? 0) > 200 || (clients.count ?? 0) > 500,
-      permissions: { canCreate: ["owner","admin","editor"].includes(role), canReview: ["owner","admin"].includes(role) },
+      permissions: { canCreate: ["owner","admin","editor"].includes(role), canReview: ["owner","admin"].includes(role), canStartWebsite: role === "owner" },
       automation: { enabled: false, pending: events.count ?? 0 },
     });
   } catch (error) { return failure(error); }
