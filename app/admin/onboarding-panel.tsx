@@ -128,6 +128,36 @@ function MetaProposalForm({ project, canEdit, canOwnerReview }: { project: Proje
     }}>Request changes</button></div>}
   </form>;
 }
+type ReviewPacketState = { ready: boolean; packet: {id:string;site_revision:number;proposal_revision:number;released_at:string}|null; siteRevision:number|null; previewDeployment:string|null; previewUrl:string|null; proposalRevision:number|null; clientReview:{decision:string;feedback:string;reviewed_at:string}|null };
+function ReviewPacketPanel({ project, canShare }: { project: Project; canShare: boolean }) {
+  const [state,setState] = useState<ReviewPacketState | null>(null);
+  const [qaNote,setQaNote] = useState(""); const [busy,setBusy] = useState(false);
+  const [error,setError] = useState(""); const [notice,setNotice] = useState("");
+  async function load() {
+    setBusy(true); setError("");
+    try { setState(await onboardingRequest<ReviewPacketState>(`/api/admin/onboarding/review-packet?projectId=${encodeURIComponent(project.id)}`)); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not load client review readiness."); }
+    finally { setBusy(false); }
+  }
+  async function share() {
+    if (!state?.ready || state.siteRevision === null || state.proposalRevision === null || !state.previewDeployment) return;
+    if (!window.confirm(`Share website preview revision ${state.siteRevision} and Meta proposal revision ${state.proposalRevision} in this client's portal? This makes both visible to the client. No email will be sent.`)) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      await onboardingRequest("/api/admin/onboarding/review-packet", { action:"share", confirmed:true, projectId:project.id, siteRevision:state.siteRevision, previewDeployment:state.previewDeployment, proposalRevision:state.proposalRevision, qaNote });
+      setNotice("Exact preview and proposal shared in this client's portal. No email was sent.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not share the packet."); }
+    finally { setBusy(false); }
+  }
+  return <section className="onboarding-workstream"><h4>Client review packet</h4><p>Share only after checking all four website pages, mobile layout, public contact details and proposal claims.</p>
+    <button type="button" disabled={busy} onClick={() => void load()}>{busy ? "Checking…" : "Check review readiness"}</button>
+    {error && <p role="alert" className="onboarding-error">{error}</p>}{notice && <p role="status" className="onboarding-success">{notice}</p>}
+    {state && !state.ready && <p>Build the current website preview, then complete and approve the Meta proposal with its matching landing page.</p>}
+    {state?.ready && !state.packet && canShare && <><p>Ready: website revision {state.siteRevision} and Meta proposal revision {state.proposalRevision}. Sharing makes both visible in the client portal.</p><label>QA evidence and checks<textarea maxLength={4000} value={qaNote} onChange={event => setQaNote(event.target.value)} /></label><button type="button" disabled={busy || !qaNote.trim()} onClick={() => void share()}>Share exact packet with client portal</button></>}
+    {state?.packet && <p className="onboarding-success">Shared for client review: website revision {state.packet.site_revision}, proposal revision {state.packet.proposal_revision}. {state.clientReview ? `Client ${state.clientReview.decision === "approved" ? "approved" : "requested changes"}${state.clientReview.feedback ? `: ${state.clientReview.feedback}` : ""}.` : "Waiting for client response."}</p>}
+  </section>;
+}
 export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }: { initialClientId?: string; onOpenWebsite?: (siteId: string) => void }) {
   const [data, setData] = useState<State | null>(null);
   const [error, setError] = useState(""); const [notice, setNotice] = useState("");
@@ -203,6 +233,7 @@ export default function OnboardingPanel({ initialClientId = "", onOpenWebsite }:
             {data.permissions.canStartWebsite && <WebsiteDraftForm key={project.id} project={project} clientName={packet.website.clientName} onOpenWebsite={onOpenWebsite} />}
             <Workstream title="Meta Ads campaign" missing={packet.metaAds.missing} steps={packet.metaAds.steps} />
             <MetaProposalForm key={project.id} project={project} canEdit={data.permissions.canReview} canOwnerReview={data.permissions.canStartWebsite} />
+            <ReviewPacketPanel key={`${project.id}-review`} project={project} canShare={data.permissions.canStartWebsite} />
           </div>}
         </article> : <div className="onboarding-detail"><h3>Select a project</h3><p>View the brief and review its status here. Project checklists appear in Tasks.</p></div>}
       </div>

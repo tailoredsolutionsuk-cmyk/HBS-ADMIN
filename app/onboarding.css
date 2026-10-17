@@ -13,6 +13,7 @@
 .onboarding-workstream{margin-top:18px;padding:16px;border:1px solid var(--onboarding-border);border-radius:8px}
 .onboarding-workstream h4{margin:0 0 12px;font-size:17px}.onboarding-workstream ul,.onboarding-workstream ol{padding-left:22px;line-height:1.6}
 .onboarding-workstream li{margin:7px 0}.onboarding-workstream small{color:var(--onboarding-muted)}
+.onboarding-client-preview{display:block;width:100%;height:560px;margin:16px 0;border:1px solid var(--onboarding-border);border-radius:8px;background:#fff}
 .onboarding-form{display:grid;gap:16px;margin:20px 0}.onboarding-form label{display:grid;gap:8px;font-size:14px;font-weight:600}
 .onboarding-form input,.onboarding-form select,.onboarding-form textarea{box-sizing:border-box;width:100%;max-width:100%;padding:12px;border:1px solid var(--onboarding-border);border-radius:7px;font:inherit;background:#fff;color:#243d33}.onboarding-form textarea{min-height:110px;resize:vertical}
 .onboarding-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.onboarding-actions button,.onboarding-error button{padding:11px 16px;border:1px solid var(--onboarding-border);border-radius:7px}
