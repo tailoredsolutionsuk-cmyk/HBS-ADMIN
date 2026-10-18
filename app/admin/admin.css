@@ -324,3 +324,67 @@ button { color: inherit; }
   .admin-topbar h1 { font-size: 17px; }.admin-eyebrow { display: none; }.admin-main { padding-inline: 14px; }.admin-welcome h2 { font-size: 29px; }.admin-stats { gap: 9px; }.admin-stat-card { min-height: 145px; padding: 15px; }.admin-stat-card > strong { font-size: 21px; }.admin-dashboard-skeleton { grid-template-columns: 1fr 1fr; gap: 9px; }.admin-dashboard-skeleton span { min-height: 145px; }.admin-quick-actions { grid-template-columns: 1fr 1fr; }.admin-site-row { grid-template-columns: auto minmax(0,1fr) auto; }.admin-site-time, .admin-site-row > svg { display: none; }.admin-service-strip { gap: 15px; }.admin-crm-form, .admin-portal-access-form { grid-template-columns: 1fr; }.admin-crm-form label, .admin-portal-access-form label, .admin-portal-access-form > p { grid-column: 1; }.admin-pipeline-toolbar, .admin-task-toolbar { grid-template-columns: 1fr; }.admin-pipeline-toolbar select, .admin-task-toolbar select { width: 100%; }.admin-task-toolbar .admin-search { grid-column: 1; }.admin-task-summary { grid-template-columns: repeat(2,1fr); }.admin-task-row { grid-template-columns: auto minmax(0,1fr); }.admin-task-actions { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; }.admin-task-actions time { text-align: left; }.admin-client-analytics-grid { grid-template-columns: 1fr; }.admin-client-analytics-details > div { grid-template-columns: 1fr; }.admin-client-analytics-count { display: none; }.admin-funnel-row { grid-template-columns: 90px minmax(90px, 1fr); gap: 10px; }.admin-funnel-row > b { grid-column: 2; margin-top: -8px; text-align: left; }.admin-work-health-grid { grid-template-columns: 1fr 1fr; }.admin-scorecard-table { margin-inline: -20px; padding-inline: 20px; }.admin-crm-table-row { grid-template-columns: 1fr; }.admin-lead-drawer { padding: 22px 17px; }.admin-lead-detail-form { grid-template-columns: 1fr; padding: 14px; }.admin-lead-detail-form .wide { grid-column: 1; }.admin-ai-message { max-width: 92%; }.admin-login-card { padding: 30px 24px; }.admin-toast { left: 14px; right: 14px; bottom: 14px; }.admin-jarvis-stats { grid-template-columns: 1fr 1fr; }.admin-jarvis-approvals article { align-items: flex-start; flex-direction: column; }.admin-jarvis-approvals article > div:last-child { width: 100%; justify-content: flex-end; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto!important; animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important; } }
+
+/* CRM calendar */
+.admin-calendar-page { display: grid; gap: 18px; }
+.admin-calendar-connection { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.admin-calendar-connection h3, .admin-calendar-toolbar h3 { margin: 5px 0; color: var(--hbs-forest); }
+.admin-calendar-connection p { margin: 4px 0 0; color: var(--hbs-muted); font-size: 12px; }
+.admin-calendar-alert { margin: 0; padding: 12px 15px; border: 1px solid #d8a99a; border-radius: 9px; background: #fff1eb; color: #814635; }
+.admin-calendar-card { padding: 0; overflow: hidden; }
+.admin-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px; }
+.admin-calendar-toolbar > div:last-child { display: flex; gap: 7px; }
+.admin-calendar-scroll { overflow-x: auto; }
+.admin-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); min-width: 720px; border-top: 1px solid var(--hbs-border); }
+.admin-calendar-weekday { padding: 10px; color: var(--hbs-muted); background: #f4f6f1; font-size: 10px; font-weight: 800; text-align: center; }
+.admin-calendar-day { min-height: 116px; padding: 8px; border-top: 1px solid var(--hbs-border); border-right: 1px solid var(--hbs-border); background: #fff; }
+.admin-calendar-day.outside { background: #fafaf7; opacity: .65; }
+.admin-calendar-day.today { background: #f1f6ee; }
+.admin-calendar-day time { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-bottom: 5px; color: var(--hbs-forest); font-size: 11px; font-weight: 800; }
+.admin-calendar-day.today time { border-radius: 50%; background: var(--hbs-forest); color: #fff; }
+.admin-calendar-event { display: block; width: 100%; margin: 3px 0; padding: 4px 5px; overflow: hidden; border: 0; border-radius: 5px; color: #22493d; font-size: 10px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.admin-calendar-event small { font-size: 9px; font-weight: 800; }
+.admin-calendar-event.outlook { background: #e2ede9; }
+.admin-calendar-event.task { background: #fff0e9; color: #704734; cursor: pointer; }
+.admin-calendar-more { color: var(--hbs-muted); font-size: 9px; }
+.admin-calendar-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 13px 18px; color: var(--hbs-muted); font-size: 11px; }
+.admin-calendar-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.admin-calendar-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; }
+.admin-calendar-legend i.outlook { background: #97bdb0; }.admin-calendar-legend i.task { background: #e6b695; }
+.admin-calendar-legend button { margin-left: auto; }
+@media (max-width: 600px) { .admin-calendar-connection { align-items: flex-start; flex-direction: column; }.admin-calendar-toolbar { align-items: flex-start; flex-direction: column; } }
+
+/* Dedicated sales dashboard */
+.admin-sales-page { display: grid; gap: 16px; }
+.admin-sales-welcome { margin-bottom: 0; }
+.admin-sales-page .admin-stats { margin-bottom: 0; }
+.admin-sales-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid #d8a99a; border-radius: 9px; background: #fff1eb; color: #814635; font-size: 12px; }
+.admin-sales-highlights { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-sales-highlights span { padding: 9px 13px; border: 1px solid var(--hbs-border); border-radius: 999px; background: #fff; color: var(--hbs-muted); font-size: 11px; }
+.admin-sales-highlights span.attention { border-color: #e4b4a8; background: #fff1eb; color: var(--hbs-danger); }
+.admin-sales-highlights strong { color: inherit; font-size: 13px; }
+.admin-sales-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.admin-sales-grid > .admin-panel { min-width: 0; }
+.admin-sales-stage-list { display: grid; gap: 13px; }
+.admin-sales-stage { display: grid; grid-template-columns: 105px minmax(80px, 1fr) 95px; align-items: center; gap: 12px; }
+.admin-sales-stage strong, .admin-sales-stage small { display: block; }
+.admin-sales-stage strong { color: var(--hbs-forest); font-size: 11px; }
+.admin-sales-stage small { margin-top: 3px; color: var(--hbs-muted); font-size: 9px; }
+.admin-sales-stage b { color: var(--hbs-forest); font-size: 11px; text-align: right; }
+.admin-sales-note { margin: 18px 0 0; color: var(--hbs-muted); font-size: 10px; }
+.admin-sales-followups, .admin-sales-rows { display: grid; }
+.admin-sales-followups button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--hbs-border); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.admin-sales-followups button:last-child, .admin-sales-rows > *:last-child { border-bottom: 0; }
+.admin-sales-followups button > span:first-child { padding: 5px 7px; border-radius: 5px; font-size: 9px; font-weight: 800; }
+.admin-sales-followups .late { background: #fff0ec; color: var(--hbs-danger); }
+.admin-sales-followups .soon { background: #eaf2e9; color: var(--hbs-leaf); }
+.admin-sales-followups strong, .admin-sales-followups small, .admin-sales-rows strong, .admin-sales-rows small { display: block; }
+.admin-sales-followups strong, .admin-sales-rows strong { color: var(--hbs-forest); font-size: 11px; }
+.admin-sales-followups small, .admin-sales-rows small { margin-top: 4px; color: var(--hbs-muted); font-size: 9px; }
+.admin-sales-followups time { color: var(--hbs-muted); font-size: 9px; text-align: right; }
+.admin-sales-rows > * { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 13px 0; border: 0; border-bottom: 1px solid var(--hbs-border); background: transparent; color: inherit; text-align: left; }
+.admin-sales-rows > button { cursor: pointer; }
+.admin-sales-rows > button:hover, .admin-sales-followups button:hover { background: #f5f8f3; }
+.admin-sales-rows b { color: var(--hbs-forest); font-size: 12px; white-space: nowrap; }
+@media (max-width: 1050px) { .admin-sales-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .admin-sales-stage { grid-template-columns: 90px minmax(60px, 1fr); }.admin-sales-stage b { grid-column: 2; text-align: left; }.admin-sales-followups button { grid-template-columns: auto minmax(0, 1fr); }.admin-sales-followups time { grid-column: 2; text-align: left; } }

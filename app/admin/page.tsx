@@ -11,6 +11,8 @@ import type { MetricsCrmData } from "./metrics-panel";
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
 const LeadFinderPanel = dynamic(() => import("./lead-finder-panel"), { loading: () => <DashboardSkeleton label="Opening Lead Finder" /> });
+const CalendarPanel = dynamic(() => import("./calendar-panel"), { loading: () => <DashboardSkeleton label="Opening calendar" /> });
+const SalesPanel = dynamic(() => import("./sales-panel"), { loading: () => <DashboardSkeleton label="Opening sales dashboard" /> });
 
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
@@ -107,6 +109,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("view") === "calendar") setActiveView("Calendar");
     let mounted = true;
     Promise.all([fetch("/api/admin/overview", { cache: "no-store" }), fetch("/api/admin/crm", { cache: "no-store" })])
       .then(async ([overviewResponse, crmResponse]) => {
@@ -131,6 +134,8 @@ export default function AdminPage() {
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
     if (activeView === "Lead Finder") return <LeadFinderPanel onOpenPipeline={() => navigate("Pipeline")} />;
+    if (activeView === "Calendar") return <CalendarPanel tasks={crm.tasks} clients={crm.clients} onOpenTasks={() => navigate("Tasks")} />;
+    if (activeView === "Sales") return <SalesPanel onOpenPipeline={() => navigate("Pipeline")} onAddLead={() => create("Pipeline")} />;
     return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} clientSection={clientSection} onClientSectionChange={setClientSection} />;
   })();
 
