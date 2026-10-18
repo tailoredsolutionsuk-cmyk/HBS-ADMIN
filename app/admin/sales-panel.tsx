@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon, MetricCard } from "./admin-ui";
 import { salesStages, summariseSales, type SalesLead } from "../../lib/crm/sales-dashboard";
+import ReceivedPayments from "./received-payments";
 
 const money = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
 const dateTime = (value: string) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(new Date(value));
@@ -53,5 +54,6 @@ export default function SalesPanel({ onOpenPipeline, onAddLead }: { onOpenPipeli
         <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Lead acquisition</span><h3>Sources of open leads</h3></div></div>{sales.sources.length ? <div className="admin-sales-rows">{sales.sources.map((source) => <div key={source.name}><span><strong>{source.name}</strong><small>{source.count} {source.count === 1 ? "lead" : "leads"}</small></span><b>{money(source.value)}</b></div>)}</div> : <div className="admin-empty-state compact"><strong>No sources yet</strong><p>Lead sources will appear as opportunities are added.</p></div>}</section>
       </div>
     </>}
+    <ReceivedPayments refreshSignal={refreshSignal} />
   </div>;
 }

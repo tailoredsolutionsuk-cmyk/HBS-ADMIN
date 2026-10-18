@@ -388,3 +388,22 @@ button { color: inherit; }
 .admin-sales-rows b { color: var(--hbs-forest); font-size: 12px; white-space: nowrap; }
 @media (max-width: 1050px) { .admin-sales-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .admin-sales-stage { grid-template-columns: 90px minmax(60px, 1fr); }.admin-sales-stage b { grid-column: 2; text-align: left; }.admin-sales-followups button { grid-template-columns: auto minmax(0, 1fr); }.admin-sales-followups time { grid-column: 2; text-align: left; } }
+
+/* Private received-payments ledger inside Sales */
+.admin-sales-payment-totals { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 18px; }
+.admin-sales-payment-totals > div { flex: 1 1 165px; min-width: 0; padding: 13px 15px; border: 1px solid var(--hbs-border); border-radius: 11px; background: #f6f8f4; }
+.admin-sales-payment-totals > div:first-child { border-color: #bfd3c3; background: #edf4eb; }
+.admin-sales-payment-totals span, .admin-sales-payment-totals strong, .admin-sales-payment-totals small { display: block; }
+.admin-sales-payment-totals span { color: var(--hbs-muted); font-size: 10px; }
+.admin-sales-payment-totals strong { margin-top: 5px; color: var(--hbs-forest); font-size: 22px; }
+.admin-sales-payment-totals small { margin-top: 3px; color: var(--hbs-muted); font-size: 9px; }
+.admin-sales-payment-table { overflow-x: auto; }
+.admin-sales-payment-head, .admin-sales-payment-row { display: grid; grid-template-columns: 110px minmax(160px, 1.4fr) minmax(140px, 1fr) 110px; gap: 15px; align-items: center; min-width: 580px; }
+.admin-sales-payment-head { padding: 10px 12px; border-bottom: 1px solid var(--hbs-border); color: var(--hbs-muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.admin-sales-payment-row { padding: 13px 12px; border-bottom: 1px solid var(--hbs-border); color: var(--hbs-muted); font-size: 11px; }
+.admin-sales-payment-row:last-child { border-bottom: 0; }
+.admin-sales-payment-row strong { color: var(--hbs-forest); }
+.admin-sales-payment-row small { display: block; margin-top: 3px; font-size: 9px; }
+.admin-sales-payment-row > strong:last-child { text-align: right; }
+.admin-sales-payment-error { padding: 10px 12px; border-radius: 8px; background: #fff0ec; color: var(--hbs-danger); font-size: 11px; }
+.admin-sales-payment-loading { color: var(--hbs-muted); font-size: 11px; }
