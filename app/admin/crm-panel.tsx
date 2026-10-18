@@ -1,6 +1,7 @@
 "use client";
 
 import { DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { groupTasksByClient } from "../../lib/crm/task-groups";
 
 type Client = { id: string; business_name: string; email: string | null; phone: string | null; website: string | null; domain: string | null; industry: string | null; status: string | null; portal_enabled: boolean; portal_email: string | null };
 type Lead = { id: string; business_name: string; contact_name: string | null; name: string; email: string; phone: string; status: string; source: string; estimated_value: number | null; help_needed: string; notes: string | null; next_action: string | null; next_action_at: string | null; probability: number; lost_reason: string | null; stage_changed_at: string; converted_business_id: string | null; created_at: string };
@@ -62,6 +63,9 @@ export default function CrmPanel({ mode, startCreate = 0, clientSection = "direc
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [taskNotice, setTaskNotice] = useState("");
+  const [quickTaskClientId, setQuickTaskClientId] = useState<string | null>(null);
+  const [quickTaskTitle, setQuickTaskTitle] = useState("");
+  const [quickTaskSaving, setQuickTaskSaving] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [taskView, setTaskView] = useState("open");
   const [taskPriority, setTaskPriority] = useState("all");
@@ -114,6 +118,20 @@ export default function CrmPanel({ mode, startCreate = 0, clientSection = "direc
         setTaskNotice(`Task added to ${clientName}.`);
       }
     } catch (issue) { setError(issue instanceof Error ? issue.message : "Save failed."); } finally { setSaving(false); }
+  }
+
+  async function addTaskForClient(event: FormEvent<HTMLFormElement>, clientId: string, clientName: string) {
+    event.preventDefault();
+    const title = quickTaskTitle.trim();
+    if (!title || quickTaskSaving) return;
+    setQuickTaskSaving(true); setError(""); setTaskNotice("");
+    try {
+      await request("POST", { entity: "task", title, clientId: clientId === "internal" ? "" : clientId, category: clientId === "internal" ? "General" : "Client work" });
+      setQuickTaskClientId(null); setQuickTaskTitle("");
+      setTaskView("open"); setTaskPriority("all"); setTaskClient(clientId); setQuery("");
+      setTaskNotice(`Task added to ${clientName}.`);
+    } catch (issue) { setError(issue instanceof Error ? issue.message : "The task could not be added."); }
+    finally { setQuickTaskSaving(false); }
   }
 
   async function update(entity: string, id: string, updates: Record<string, unknown>) {
@@ -231,18 +249,7 @@ export default function CrmPanel({ mode, startCreate = 0, clientSection = "direc
     if (a.due_date !== b.due_date) return a.due_date ? -1 : 1;
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   }), [data, query, taskClient, taskPriority, taskToday, taskView]);
-  const taskGroups = useMemo(() => {
-    const clients = new Map((data?.clients ?? []).map((client) => [client.id, client]));
-    const groups = new Map<string, { id: string; name: string; tasks: Task[] }>();
-    for (const task of filteredTasks) {
-      const client = task.client_id ? clients.get(task.client_id) : null;
-      const id = client?.id || "internal";
-      const group = groups.get(id) || { id, name: client?.business_name || "HBS internal", tasks: [] };
-      group.tasks.push(task);
-      groups.set(id, group);
-    }
-    return Array.from(groups.values()).sort((a, b) => a.id === "internal" ? 1 : b.id === "internal" ? -1 : a.name.localeCompare(b.name));
-  }, [data?.clients, filteredTasks]);
+  const taskGroups = useMemo(() => groupTasksByClient<Task>(data?.clients ?? [], filteredTasks, taskClient, query), [data?.clients, filteredTasks, taskClient, query]);
 
   if (loading) return <section className="admin-panel admin-crm-loading" aria-busy="true"><span className="admin-loading-pulse" />Loading live CRM data…</section>;
   if (!data) return <section className="admin-panel admin-crm-loading">{error || "The CRM is unavailable."}</section>;
@@ -295,7 +302,7 @@ export default function CrmPanel({ mode, startCreate = 0, clientSection = "direc
           <label>View<select value={taskView} onChange={(event) => setTaskView(event.target.value)}><option value="open">Open work</option><option value="today">Due today</option><option value="overdue">Overdue</option><option value="done">Completed</option><option value="all">All tasks</option></select></label>
           <label>Priority<select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)}><option value="all">All priorities</option>{taskPriorities.map((priority) => <option key={priority} value={priority}>{priority[0].toUpperCase() + priority.slice(1)}</option>)}</select></label>
         </div>
-        <div className="admin-task-list">{taskGroups.length ? taskGroups.map((group) => <section className="admin-task-group" key={group.id} aria-labelledby={`task-group-${group.id}`}><header><span className="admin-task-group-mark">{group.id === "internal" ? "H" : group.name.slice(0, 1).toUpperCase()}</span><div><h3 id={`task-group-${group.id}`}>{group.name}</h3><small>{group.tasks.filter((task) => !task.done).length} open · {group.tasks.length} total</small></div></header>{group.tasks.map((task) => {
+        <div className="admin-task-list">{taskGroups.length ? taskGroups.map((group) => <section className="admin-task-group" key={group.id} aria-labelledby={`task-group-${group.id}`}><header><span className="admin-task-group-mark">{group.id === "internal" ? "H" : group.name.slice(0, 1).toUpperCase()}</span><div><h3 id={`task-group-${group.id}`}>{group.name}</h3><small>{group.tasks.filter((task) => !task.done).length} open · {group.tasks.length} total</small></div>{data.permissions.canEdit && <button className="admin-task-group-add" type="button" aria-expanded={quickTaskClientId === group.id} aria-controls={`task-quick-add-${group.id}`} onClick={() => { setQuickTaskClientId((current) => current === group.id ? null : group.id); setQuickTaskTitle(""); setTaskNotice(""); }}>+ Add new Task</button>}</header>{quickTaskClientId === group.id && data.permissions.canEdit && <form id={`task-quick-add-${group.id}`} className="admin-task-group-form" onSubmit={(event) => addTaskForClient(event, group.id, group.name)}><label htmlFor={`task-quick-title-${group.id}`}>New task for {group.name}</label><div><input id={`task-quick-title-${group.id}`} autoFocus required maxLength={300} value={quickTaskTitle} onChange={(event) => setQuickTaskTitle(event.target.value)} placeholder="What needs to be done?" disabled={quickTaskSaving} /><button className="admin-primary-button" disabled={!quickTaskTitle.trim() || quickTaskSaving}>{quickTaskSaving ? "Adding…" : "Add task"}</button><button className="admin-text-button" type="button" disabled={quickTaskSaving} onClick={() => { setQuickTaskClientId(null); setQuickTaskTitle(""); }}>Cancel</button></div></form>}{!group.tasks.length && <p className="admin-task-group-empty">No tasks in this view for {group.name}.</p>}{group.tasks.map((task) => {
           const overdue = !task.done && Boolean(task.due_date) && task.due_date! < taskToday;
           const checked = taskDoneDrafts[task.id] ?? task.done;
           const needsConfirmation = checked !== task.done;
