@@ -109,7 +109,9 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("view") === "calendar") setActiveView("Calendar");
+    const requestedView = new URLSearchParams(window.location.search).get("view");
+    if (requestedView === "calendar") setActiveView("Calendar");
+    if (requestedView === "integrations") setActiveView("Integrations");
     let mounted = true;
     Promise.all([fetch("/api/admin/overview", { cache: "no-store" }), fetch("/api/admin/crm", { cache: "no-store" })])
       .then(async ([overviewResponse, crmResponse]) => {

@@ -35,6 +35,7 @@ export async function GET() {
       { id: "github", name: "GitHub", configured: Boolean(process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_ADMIN_REPO), detail: "Source and repository operations" },
       { id: "vercel", name: "Vercel", configured: Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TEAM_ID && process.env.VERCEL_ADMIN_PROJECT_ID), detail: "Deployment management API" },
       { id: "make", name: "Make", configured: Boolean(process.env.MAKE_API_TOKEN && process.env.MAKE_TEAM_ID), detail: "Business automations" },
+      { id: "google_sheets", name: "Google Sheets", configured: Boolean(process.env.GOOGLE_SHEETS_CLIENT_ID && process.env.GOOGLE_SHEETS_CLIENT_SECRET && process.env.GOOGLE_SHEETS_REDIRECT_URI && process.env.GOOGLE_SHEETS_TOKEN_ENCRYPTION_KEY), detail: "Import HBS outreach prospects" },
       { id: "ai", name: ai.provider === "openai" ? "OpenAI API" : "Vercel AI Gateway", configured: ai.configured, detail: ai.model || "Model configuration required" },
     ],
     activityAutomation: {
