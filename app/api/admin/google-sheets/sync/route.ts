@@ -18,7 +18,15 @@ async function getRows(connection: GoogleSheetsConnection, accessToken: string):
   const range = `${connection.sheet_name}!A1:F1000`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(connection.spreadsheet_id)}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store", signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error(`GOOGLE_SHEETS_READ_${response.status}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as {
+      error?: { message?: string; errors?: Array<{ reason?: string }> };
+    } | null;
+    const reason = payload?.error?.errors?.[0]?.reason || "unknown";
+    // Preserve only Google's stable error reason; do not expose provider response
+    // bodies, OAuth tokens, or spreadsheet contents to the browser.
+    throw new Error(`GOOGLE_SHEETS_READ_${response.status}_${reason}`);
+  }
   const payload = await response.json() as { values?: unknown[][] };
   const rows = payload.values || [];
   if (!rows.length) return [];
@@ -101,7 +109,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ imported: toImport.length, alreadyInCrm: matchedExisting.length, alreadySynced: sheetRows.length - unseen.length, totalRows: sheetRows.length, lastSyncedAt: now });
   } catch (error) {
     const code = error instanceof Error ? error.message : "GOOGLE_SHEETS_SYNC_FAILED";
-    const mapped = code === "GOOGLE_SHEETS_HEADERS_INVALID" ? "GOOGLE_SHEETS_HEADERS_INVALID" : code.startsWith("GOOGLE_SHEETS_READ_403") ? "GOOGLE_SHEETS_FILE_ACCESS_DENIED" : code.startsWith("GOOGLE_SHEETS_READ_404") ? "GOOGLE_SHEETS_NOT_FOUND" : code.startsWith("GOOGLE_SHEETS_READ_") ? "GOOGLE_SHEETS_READ_FAILED" : "GOOGLE_SHEETS_SYNC_FAILED";
+    const mapped = code === "GOOGLE_SHEETS_HEADERS_INVALID" ? "GOOGLE_SHEETS_HEADERS_INVALID"
+      : code.includes("_403_accessNotConfigured") ? "GOOGLE_SHEETS_API_DISABLED"
+      : code.includes("_403_insufficientPermissions") || code.includes("_403_forbidden") || code.includes("_403_appNotAuthorizedToFile") ? "GOOGLE_SHEETS_FILE_ACCESS_DENIED"
+      : code.startsWith("GOOGLE_SHEETS_READ_403_") ? `GOOGLE_SHEETS_API_ERROR_${code.split("_").pop()?.toUpperCase() || "UNKNOWN"}`
+      : code.startsWith("GOOGLE_SHEETS_READ_404") ? "GOOGLE_SHEETS_NOT_FOUND"
+      : code.startsWith("GOOGLE_SHEETS_READ_") ? "GOOGLE_SHEETS_READ_FAILED"
+      : "GOOGLE_SHEETS_SYNC_FAILED";
     return NextResponse.json({ error: mapped }, { status: 502 });
   }
 }
+
