@@ -1,10 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { defaultProfile, type IdealCustomerProfile, type Prospect } from "../../lib/leads/ideal-customer";
 import type { WebsiteResearchResult } from "../../lib/leads/chrome-import";
 import { Icon } from "./admin-ui";
-import type { Lead } from "./metrics-panel";
 import ChromeCsvImport from "./chrome-csv-import";
 
 type ManualBusiness = { name: string; sector: string; location: string; website: string; email: string; phone: string; sourceUrl: string };
@@ -27,30 +26,7 @@ async function post(action: string, payload: Record<string, unknown>) {
   return data;
 }
 
-function SpreadsheetLeadDashboard({ leads, onOpenPipeline }: { leads: Lead[]; onOpenPipeline: () => void }) {
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState("All stages");
-  const spreadsheetLeads = useMemo(() => leads.filter((lead) => lead.source === "Google Sheets: Leads For Outreach"), [leads]);
-  const stages = ["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
-  const count = (name: string) => spreadsheetLeads.filter((lead) => lead.status === name).length;
-  const counts = [{ name: "New", count: count("New") }, { name: "In progress", count: count("Contacted") + count("Qualified") + count("Proposal") }, { name: "Won", count: count("Won") }, { name: "Lost", count: count("Lost") }];
-  const filtered = spreadsheetLeads.filter((lead) => {
-    const term = query.trim().toLocaleLowerCase("en-GB");
-    return (!term || [lead.business_name, lead.phone, lead.main_location, lead.notes].some((value) => value?.toLocaleLowerCase("en-GB").includes(term))) && (stage === "All stages" || lead.status === stage);
-  });
-  const detail = (notes: string | null | undefined, label: string) => notes?.split("\n").find((line) => line.startsWith(`${label}:`))?.slice(label.length + 1).trim() || "—";
-  return <section className="admin-panel admin-spreadsheet-dashboard">
-    <div className="admin-panel-heading"><div><span className="admin-section-kicker">Spreadsheet prospects</span><h3>Leads For Outreach</h3><p>Spreadsheet details with outreach status managed in the CRM.</p></div><button className="admin-outline-button" type="button" onClick={onOpenPipeline}>Open Pipeline <Icon name="arrow-up-right" size={14} /></button></div>
-    <div className="admin-spreadsheet-stats"><article><small>Imported leads</small><strong>{spreadsheetLeads.length}</strong></article>{counts.map((item) => <article key={item.name}><small>{item.name}</small><strong>{item.count}</strong></article>)}</div>
-    {spreadsheetLeads.length ? <>
-      <div className="admin-spreadsheet-toolbar"><label className="admin-search"><Icon name="search" size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search business, phone, location or service" aria-label="Search spreadsheet leads" /></label><select value={stage} onChange={(event) => setStage(event.target.value)} aria-label="Filter spreadsheet leads by stage"><option>All stages</option>{stages.map((item) => <option key={item}>{item}</option>)}</select></div>
-      <div className="admin-spreadsheet-list" role="list" aria-label="Spreadsheet leads">{filtered.length ? filtered.map((lead) => <article className="admin-spreadsheet-row" key={lead.id} role="listitem"><div className="admin-spreadsheet-business"><strong>{lead.business_name}</strong><small>{lead.main_location || "Location not listed"}{lead.phone ? ` · ${lead.phone}` : ""}</small></div><div className="admin-spreadsheet-service"><small>Services</small><span>{detail(lead.notes, "Services listed")}</span><small>Customer reviews</small><span>{detail(lead.notes, "Customer reviews listed")}</span></div><div className="admin-spreadsheet-stage"><span className={`admin-lead-stage ${lead.status.toLowerCase()}`}>{lead.status}</span><small>{lead.created_at ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(lead.created_at)) : "Imported"}</small></div></article>) : <div className="admin-empty-state compact"><strong>No leads match these filters</strong><p>Try a different search or outreach stage.</p></div>}</div>
-      <p className="admin-spreadsheet-footnote">{filtered.length} of {spreadsheetLeads.length} spreadsheet lead{spreadsheetLeads.length === 1 ? "" : "s"}. Outreach stages and follow-ups are updated in Pipeline.</p>
-    </> : <div className="admin-empty-state compact"><strong>No spreadsheet leads in the CRM yet</strong><p>Connect and sync “Leads For Outreach” from Integrations to see prospects here.</p></div>}
-  </section>;
-}
-
-export default function LeadFinderPanel({ leads, onOpenPipeline }: { leads: Lead[]; onOpenPipeline: () => void }) {
+export default function LeadFinderPanel({ onOpenPipeline }: { onOpenPipeline: () => void }) {
   const [profile, setProfile] = useState<IdealCustomerProfile>(defaultProfile);
   const [manual, setManual] = useState<ManualBusiness>(blankBusiness);
   const [results, setResults] = useState<Prospect[]>([]);
@@ -133,7 +109,6 @@ export default function LeadFinderPanel({ leads, onOpenPipeline }: { leads: Lead
   };
 
   return <div className="admin-lead-finder">
-    <SpreadsheetLeadDashboard leads={leads} onOpenPipeline={onOpenPipeline} />
     <section className="admin-panel admin-lead-intro"><div><span className="admin-section-kicker">HBS sales workspace</span><h2>Find businesses that fit HBS</h2><p>Research UK business websites or review permitted CSV exports from Chrome. Add only the businesses you approve. Match scores reflect available details—not website quality or buying intent.</p></div><button type="button" className="admin-outline-button" onClick={onOpenPipeline}>Open Pipeline <Icon name="arrow-up-right" size={15} /></button></section>
     {loading ? <div className="admin-panel admin-crm-loading" aria-busy="true">Loading Lead Finder…</div> : <>
       {error ? <div className="admin-lead-alert error" role="alert">{error}</div> : null}
@@ -173,4 +148,3 @@ export default function LeadFinderPanel({ leads, onOpenPipeline }: { leads: Lead
     </>}
   </div>;
 }
-
