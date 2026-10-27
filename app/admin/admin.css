@@ -218,6 +218,22 @@ button { color: inherit; }
 .admin-lead-stage { padding: 5px 8px; border-radius: 999px; background: var(--hbs-sage); color: var(--hbs-forest); font-size: 9px; font-weight: 750; }
 .admin-lead-stage.won { background: #e6f2e9; color: var(--hbs-success); }.admin-lead-stage.lost { background: #f8e6e2; color: var(--hbs-danger); }.admin-lead-stage.proposal { background: var(--hbs-peach-soft); color: #80543f; }
 .admin-spreadsheet-footnote { margin: 10px 0 0; color: var(--hbs-faint); font-size: 9px; }
+.admin-outreach-page { display: grid; gap: 18px; }
+.admin-outreach-page > .admin-welcome { margin-bottom: 0; }
+.admin-outreach-toolbar { grid-template-columns: minmax(200px,1fr) 145px 165px; }
+.admin-outreach-priorities { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+.admin-outreach-priorities button { padding: 8px 12px; border: 1px solid var(--hbs-border); border-radius: 999px; background: var(--hbs-paper); color: var(--hbs-muted); font-size: 11px; cursor: pointer; }
+.admin-outreach-priorities button.overdue { color: var(--hbs-danger); }
+.admin-outreach-priorities button[aria-pressed="true"] { border-color: var(--hbs-forest); background: var(--hbs-sage); color: var(--hbs-forest); }
+.admin-outreach-list { max-height: 560px; }
+.admin-outreach-row { grid-template-columns: minmax(150px,1fr) minmax(130px,1fr) minmax(150px,1fr) auto; }
+.admin-outreach-row > div { min-width: 0; overflow-wrap: anywhere; }
+.admin-outreach-row .admin-spreadsheet-service span { white-space: normal; }
+.admin-outreach-follow-up { display: grid; gap: 5px; font-size: 10px; color: var(--hbs-muted); }
+.admin-outreach-follow-up strong { color: var(--hbs-forest); font-size: 10px; }
+.admin-outreach-follow-up.overdue strong { color: var(--hbs-danger); }
+.admin-outreach-follow-up.today strong { color: var(--hbs-warning); }
+@media (max-width: 1000px) { .admin-outreach-row { grid-template-columns: minmax(0,1fr) auto; }.admin-outreach-row .admin-spreadsheet-stage { grid-column: 2; grid-row: 1; }.admin-outreach-row .admin-spreadsheet-service, .admin-outreach-follow-up { grid-column: 1 / -1; }.admin-outreach-toolbar { grid-template-columns: 1fr 1fr; }.admin-outreach-toolbar .admin-search { grid-column: 1 / -1; } }
 .admin-lead-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; background: linear-gradient(110deg, #fff 0%, #f0f4ee 100%); }
 .admin-lead-intro h2 { margin: 7px 0; font: 500 clamp(22px, 3vw, 30px) Georgia, serif; color: var(--hbs-forest); }
 .admin-lead-intro p, .admin-lead-profile > p, .admin-lead-manual > p { max-width: 700px; margin: 0 0 16px; color: var(--hbs-muted); font-size: 12px; line-height: 1.6; }
