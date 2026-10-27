@@ -20,9 +20,12 @@ async function getRows(connection: GoogleSheetsConnection, accessToken: string):
   const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store", signal: AbortSignal.timeout(15000) });
   if (!response.ok) {
     const payload = await response.json().catch(() => null) as {
-      error?: { message?: string; errors?: Array<{ reason?: string }> };
+      error?: { status?: string; errors?: Array<{ reason?: string }>; details?: Array<{ reason?: string }> };
     } | null;
-    const reason = payload?.error?.errors?.[0]?.reason || "unknown";
+    const reason = payload?.error?.details?.find((detail) => detail.reason)?.reason
+      || payload?.error?.errors?.[0]?.reason
+      || payload?.error?.status
+      || "unknown";
     // Preserve only Google's stable error reason; do not expose provider response
     // bodies, OAuth tokens, or spreadsheet contents to the browser.
     throw new Error(`GOOGLE_SHEETS_READ_${response.status}_${reason}`);
@@ -110,8 +113,8 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "GOOGLE_SHEETS_SYNC_FAILED";
     const mapped = code === "GOOGLE_SHEETS_HEADERS_INVALID" ? "GOOGLE_SHEETS_HEADERS_INVALID"
-      : code.includes("_403_accessNotConfigured") ? "GOOGLE_SHEETS_API_DISABLED"
-      : code.includes("_403_insufficientPermissions") || code.includes("_403_forbidden") || code.includes("_403_appNotAuthorizedToFile") ? "GOOGLE_SHEETS_FILE_ACCESS_DENIED"
+      : code.includes("_403_accessNotConfigured") || code.includes("_403_SERVICE_DISABLED") ? "GOOGLE_SHEETS_API_DISABLED"
+      : code.includes("_403_insufficientPermissions") || code.includes("_403_forbidden") || code.includes("_403_appNotAuthorizedToFile") || code.includes("_403_PERMISSION_DENIED") ? "GOOGLE_SHEETS_FILE_ACCESS_DENIED"
       : code.startsWith("GOOGLE_SHEETS_READ_403_") ? `GOOGLE_SHEETS_API_ERROR_${code.split("_").pop()?.toUpperCase() || "UNKNOWN"}`
       : code.startsWith("GOOGLE_SHEETS_READ_404") ? "GOOGLE_SHEETS_NOT_FOUND"
       : code.startsWith("GOOGLE_SHEETS_READ_") ? "GOOGLE_SHEETS_READ_FAILED"
