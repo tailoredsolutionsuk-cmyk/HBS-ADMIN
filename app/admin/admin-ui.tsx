@@ -54,11 +54,20 @@ type ShellProps = {
 
 export function AdminShell({ activeView, collapsed, mobileOpen, connected, loading, onNavigate, onCreateTask, onToggleCollapsed, onToggleMobile, children }: ShellProps) {
   const [navQuery, setNavQuery] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const mobileCloseRef = useRef<HTMLButtonElement>(null);
   const term = navQuery.trim().toLowerCase();
   const groups = navigation.map((group) => ({ ...group, items: group.items.filter((item) => !term || `${item.label} ${adminViewHelp[item.label]}`.toLowerCase().includes(term)) })).filter((group) => group.items.length);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 820px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -88,7 +97,7 @@ export function AdminShell({ activeView, collapsed, mobileOpen, connected, loadi
   return <main className={`admin-shell ${collapsed ? "sidebar-collapsed" : ""} ${mobileOpen ? "mobile-nav-open" : ""}`}>
     <a className="admin-skip-link" href="#admin-main">Skip to workspace content</a>
     {mobileOpen ? <button className="admin-mobile-backdrop" tabIndex={-1} aria-label="Close navigation" onClick={onToggleMobile} /> : null}
-    <aside ref={sidebarRef} className="admin-sidebar" role={mobileOpen ? "dialog" : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Harley’s workspace navigation">
+    <aside ref={sidebarRef} className="admin-sidebar" inert={isMobile && !mobileOpen} aria-hidden={isMobile && !mobileOpen ? true : undefined} role={mobileOpen ? "dialog" : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Harley’s workspace navigation">
       <div className="admin-brand"><span className="admin-brand-mark">H</span><span className="admin-brand-copy">HBS <small>ADMIN</small></span><button className="admin-collapse-button" onClick={() => { setNavQuery(""); onToggleCollapsed(); }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed}><Icon name="chevron-left" size={16} /></button><button ref={mobileCloseRef} className="admin-mobile-close" onClick={onToggleMobile} aria-label="Close navigation"><Icon name="x" /></button></div>
       <div className="admin-workspace-select"><span className="admin-workspace-avatar">H</span><span className="admin-workspace-copy"><strong>Harley&apos;s workspace</strong><small>Owner · Super admin</small></span></div>
       <label className="admin-nav-search"><Icon name="search" size={16} /><input ref={searchRef} value={navQuery} onChange={(event) => setNavQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape" && navQuery) { event.stopPropagation(); setNavQuery(""); } }} placeholder="Find a section…" aria-label="Find a CRM section" /></label>
