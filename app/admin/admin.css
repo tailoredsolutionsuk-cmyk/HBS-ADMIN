@@ -353,6 +353,19 @@ button { color: inherit; }
 .admin-calendar-legend i.outlook { background: #97bdb0; }.admin-calendar-legend i.task { background: #e6b695; }
 .admin-calendar-legend button { margin-left: auto; }
 @media (max-width: 600px) { .admin-calendar-connection { align-items: flex-start; flex-direction: column; }.admin-calendar-toolbar { align-items: flex-start; flex-direction: column; } }
+.admin-sheets-connection { display: grid; gap: 14px; }
+.admin-sheets-connection .admin-panel-heading { align-items: flex-start; }
+.admin-sheets-connection .admin-panel-heading p { max-width: 720px; margin: 6px 0 0; color: var(--hbs-muted); font-size: 12px; line-height: 1.6; }
+.admin-sheets-connection .admin-panel-heading > b { padding: 6px 9px; border-radius: 99px; font-size: 10px; white-space: nowrap; }
+.admin-sheets-connection .admin-panel-heading > b.ready { background: #e5f1e8; color: #315d43; }
+.admin-sheets-connection .admin-panel-heading > b.missing { background: #fff0e9; color: #854d34; }
+.admin-sheets-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.admin-sheets-controls p { flex: 1 1 100%; margin: 0 0 4px; color: var(--hbs-muted); font-size: 11px; }
+.admin-sheets-setup { padding: 14px; border: 1px solid var(--hbs-border); border-radius: 10px; background: #f7f8f4; color: var(--hbs-ink); font-size: 11px; line-height: 1.65; }
+.admin-sheets-setup p { margin: 6px 0; color: var(--hbs-muted); }
+.admin-sheets-setup ul { display: grid; gap: 3px; margin: 8px 0; padding-left: 20px; }
+.admin-sheets-setup code { color: var(--hbs-forest); font-size: 10px; }
+.admin-sheets-mapping { margin: 0; color: var(--hbs-muted); font-size: 10px; line-height: 1.5; }
 
 /* Dedicated sales dashboard */
 .admin-sales-page { display: grid; gap: 16px; }
