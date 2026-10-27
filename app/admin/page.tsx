@@ -114,11 +114,11 @@ export default function AdminPage() {
   };
 
   const toggleMobile = useCallback(() => setMobileOpen((value) => !value), []);
-  const toggleCollapsed = () => setCollapsed((current) => {
-    const next = !current;
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
     try { window.localStorage.setItem("hbs-sidebar-collapsed", String(next)); } catch { /* Optional preference storage. */ }
-    return next;
-  });
+  };
 
   useEffect(() => {
     const requestedView = adminViewFromSlug(new URLSearchParams(window.location.search).get("view"));
