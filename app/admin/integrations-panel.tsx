@@ -11,6 +11,7 @@ const syncErrorMessage: Record<string, string> = {
   GOOGLE_SHEETS_NOT_CONFIGURED: "Google Sheets is not configured yet. Add the four Google OAuth variables in Vercel, then redeploy.",
   GOOGLE_SHEETS_NOT_CONNECTED: "Connect the Google account that can access the outreach spreadsheet, then sync again.",
   GOOGLE_SHEETS_FILE_ACCESS_DENIED: "Google connected, but that Google account cannot read this spreadsheet. Share it with the connected account and retry.",
+  GOOGLE_SHEETS_API_DISABLED: "Google Sheets API is disabled in the Google Cloud project used by this OAuth client. Enable the API in that same project, wait a few minutes, then retry.",
   GOOGLE_SHEETS_NOT_FOUND: "The outreach spreadsheet or its Sheet1 tab could not be found.",
   GOOGLE_SHEETS_HEADERS_INVALID: "The sheet needs these headers: Business Name, Mobile Number, Location, Services Offered, and Customer Reviews.",
   GOOGLE_SHEETS_DEDUP_CHECK_FAILED: "The CRM could not check for existing leads. No spreadsheet rows were imported.",
@@ -43,7 +44,12 @@ export default function IntegrationsPanel() {
     try {
       const response = await fetch("/api/admin/google-sheets/sync", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: "{}" });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(syncErrorMessage[payload.error] || "The outreach sheet could not be synced.");
+      if (!response.ok) {
+        const diagnostic = typeof payload.error === "string" && payload.error.startsWith("GOOGLE_SHEETS_API_ERROR_")
+          ? `Google Sheets returned ${payload.error.slice("GOOGLE_SHEETS_API_ERROR_".length)}. This identifies the remaining Google access/configuration issue; no rows were imported.`
+          : syncErrorMessage[payload.error] || "The outreach sheet could not be synced.";
+        throw new Error(diagnostic);
+      }
       setSheetsMessage(`Sync complete: ${payload.imported} new lead${payload.imported === 1 ? "" : "s"} added, ${payload.alreadyInCrm} already in the CRM, and ${payload.alreadySynced} previously synced.`);
       const refreshed = await fetch("/api/admin/google-sheets", { cache: "no-store" });
       if (refreshed.ok) setSheets(await refreshed.json());
@@ -93,4 +99,5 @@ export default function IntegrationsPanel() {
     {data?.activityAutomation && <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-section-kicker">Automatic audit trail</span><h3>GitHub → HBS CRM</h3><p>Every push creates a plain-English summary of the commits and changed files, linked to the right project and client without saving source code or private chat content.</p></div>{data.activityAutomation.canManage && <button className="admin-primary-button" disabled={saving} onClick={activateActivityTracking}>{saving ? "Connecting…" : data.activityAutomation.configured ? "Recheck tracking" : "Activate tracking"}</button>}</div><div className="admin-integration-grid">{data.activityAutomation.sources.map((source) => <article key={source.project_name}><span className="admin-service-logo">GH</span><div><strong>{source.project_name}</strong><small>{source.last_error || (source.last_verified_at ? `Verified ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(source.last_verified_at))}` : "Ready to connect")}</small></div><b className={source.webhook_id && !source.last_error ? "ready" : "missing"}>{source.webhook_id && !source.last_error ? "Tracking" : "Not active"}</b></article>)}</div></section>}
   </div>;
 }
+
 
