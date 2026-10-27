@@ -60,7 +60,7 @@ export async function GET() {
   const service = portalService();
   const [clients, leads, tasks, notes, activities, pageViews, portalUsers, projectActivities] = await Promise.all([
     supabase.from("clients").select("id,business_name,short_name,email,phone,website,domain,industry,status,portal_enabled,portal_email,created_at,updated_at").eq("archived", false).order("business_name"),
-    supabase.from("leads").select("id,business_name,contact_name,name,email,phone,status,source,project_type,estimated_value,assigned_to,notes,help_needed,next_action,next_action_at,probability,lost_reason,won_at,last_contacted_at,stage_changed_at,converted_business_id,converted_at,created_at,updated_at").order("created_at", { ascending: false }),
+    supabase.from("leads").select("id,business_name,contact_name,name,email,phone,main_location,status,source,project_type,estimated_value,assigned_to,notes,help_needed,next_action,next_action_at,probability,lost_reason,won_at,last_contacted_at,stage_changed_at,converted_business_id,converted_at,created_at,updated_at").order("created_at", { ascending: false }),
     supabase.from("checklist_items").select("id,client_id,title,notes,done,due_date,position,category,priority,status,assigned_to,created_at,completed_at,updated_at").order("done").order("due_date", { ascending: true, nullsFirst: false }).order("position"),
     supabase.from("crm_notes").select("id,entity_type,entity_id,note,created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("crm_activities").select("id,entity_type,entity_id,action,detail,created_at").order("created_at", { ascending: false }).limit(40),

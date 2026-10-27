@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Icon, MetricCard, type AdminView } from "./admin-ui";
 
 type Client = { id: string; business_name: string; status: string | null };
-type Lead = { id: string; business_name: string; status: string; estimated_value: number | null; probability: number; converted_business_id: string | null; next_action: string | null; next_action_at: string | null };
+export type Lead = { id: string; business_name: string; status: string; estimated_value: number | null; probability: number; converted_business_id: string | null; next_action: string | null; next_action_at: string | null; source?: string | null; phone?: string | null; main_location?: string | null; notes?: string | null; created_at?: string | null };
 type Task = { id: string; client_id: string | null; title: string; priority: string; status: string; done: boolean; due_date: string | null };
 type ClientAnalytics = { clientId: string; views: number; visitors: number; trackedPages: number; lastSeenAt: string | null };
 type PortalUser = { client_id: string; disabled: boolean; last_login_at: string | null; login_count: number };
