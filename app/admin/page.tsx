@@ -97,6 +97,11 @@ export default function AdminPage() {
     setBuilderDirty(false);
     if (targetView === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
     setActiveView(targetView);
+    if (targetView === "Lead Finder") {
+      fetch("/api/admin/crm", { cache: "no-store" }).then(async (response) => {
+        if (response.ok) setCrm(await response.json());
+      }).catch(() => undefined);
+    }
   };
 
   const create = (view: "Pipeline" | "Tasks" | "Websites") => {
@@ -135,7 +140,7 @@ export default function AdminPage() {
     if (activeView === "JARVIS CEO") return <JarvisPanel />;
     if (activeView === "Integrations") return <IntegrationsPanel />;
     if (activeView === "Metrics") return <MetricsPanel data={crm} loading={loading} onNavigate={navigate} />;
-    if (activeView === "Lead Finder") return <LeadFinderPanel onOpenPipeline={() => navigate("Pipeline")} />;
+    if (activeView === "Lead Finder") return <LeadFinderPanel leads={crm.leads} onOpenPipeline={() => navigate("Pipeline")} />;
     if (activeView === "Calendar") return <CalendarPanel tasks={crm.tasks} clients={crm.clients} onOpenTasks={() => navigate("Tasks")} />;
     if (activeView === "Sales") return <SalesPanel onOpenPipeline={() => navigate("Pipeline")} onAddLead={() => create("Pipeline")} />;
     return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} clientSection={clientSection} onClientSectionChange={setClientSection} />;
