@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AdminShell, type AdminView, Icon, MetricCard } from "./admin-ui";
 import CrmPanel from "./crm-panel";
 import IntegrationsPanel from "./integrations-panel";
 import JarvisPanel from "./jarvis-panel";
 import type { MetricsCrmData } from "./metrics-panel";
+import { adminViewFromSlug, adminViewSlugs } from "../../lib/crm/admin-navigation";
 
 const BuilderPanel = dynamic(() => import("./builder-panel"), { loading: () => <DashboardSkeleton label="Opening website studio" /> });
 const MetricsPanel = dynamic(() => import("./metrics-panel"), { loading: () => <DashboardSkeleton label="Opening business metrics" /> });
@@ -18,7 +19,7 @@ const SalesPanel = dynamic(() => import("./sales-panel"), { loading: () => <Dash
 type Website = { name: string; domain: string; type: string; status: string; color: string; updated: string; deployment: string };
 type Activity = { title: string; detail: string; time: string; tone: string };
 type DashboardStats = { activeWebsites: number | string; deployments: number | string; teamMembers: number | string; uptime: string; pageViews30d?: number };
-type CrmData = MetricsCrmData;
+type CrmData = MetricsCrmData & { permissions?: { canEdit: boolean } };
 
 const fallbackStats: DashboardStats = { activeWebsites: 0, deployments: "—", teamMembers: "—", uptime: "—", pageViews30d: 0 };
 const fallbackCrm: CrmData = { clients: [], clientAnalytics: [], leads: [], tasks: [], portalUsers: [], projectActivities: [], metrics: { clients: 0, openLeads: 0, pipelineValue: 0, weightedValue: 0, overdueFollowUps: 0, tasksDue: 0 } };
@@ -89,31 +90,41 @@ export default function AdminPage() {
 
   const navigate = (view: AdminView, startWebsite = false) => {
     const targetView = view === "Pipeline" ? "Clients" : view;
+    if (activeView === "Websites" && targetView !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return false;
     if (view === "Pipeline") {
       setClientSection("pipeline");
     } else if (targetView === "Clients") {
       setClientSection("directory");
     }
-    if (activeView === "Websites" && targetView !== activeView && builderDirty && !window.confirm("Leave the builder and discard unsaved changes?")) return;
     setBuilderDirty(false);
     if (targetView === "Websites") setBuilderStart(startWebsite ? (value) => value + 1 : 0);
     setActiveView(targetView);
+    window.scrollTo({ top: 0 });
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", adminViewSlugs[view]);
+    window.history.replaceState(null, "", url);
+    return true;
   };
 
   const create = (view: "Pipeline" | "Tasks" | "Websites") => {
     if (view === "Websites") navigate("Websites", true);
     else {
-      setCreateSignal((value) => value + 1);
-      if (view === "Pipeline") navigate("Pipeline");
-      else navigate(view);
+      if (navigate(view)) setCreateSignal((value) => value + 1);
     }
   };
 
+  const toggleMobile = useCallback(() => setMobileOpen((value) => !value), []);
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try { window.localStorage.setItem("hbs-sidebar-collapsed", String(next)); } catch { /* Optional preference storage. */ }
+  };
+
   useEffect(() => {
-    const requestedView = new URLSearchParams(window.location.search).get("view");
-    if (requestedView === "calendar") setActiveView("Calendar");
-    if (requestedView === "integrations") setActiveView("Integrations");
-    if (requestedView === "outreach") setActiveView("Outreach & Follow-up");
+    const requestedView = adminViewFromSlug(new URLSearchParams(window.location.search).get("view"));
+    setActiveView(requestedView === "Pipeline" ? "Clients" : requestedView);
+    if (requestedView === "Pipeline") setClientSection("pipeline");
+    try { setCollapsed(window.localStorage.getItem("hbs-sidebar-collapsed") === "true"); } catch { /* Keep the default layout. */ }
     let mounted = true;
     Promise.all([fetch("/api/admin/overview", { cache: "no-store" }), fetch("/api/admin/crm", { cache: "no-store" })])
       .then(async ([overviewResponse, crmResponse]) => {
@@ -141,8 +152,8 @@ export default function AdminPage() {
     if (activeView === "Outreach & Follow-up") return <OutreachPanel onOpenPipeline={() => navigate("Pipeline")} onOpenIntegrations={() => navigate("Integrations")} />;
     if (activeView === "Calendar") return <CalendarPanel tasks={crm.tasks} clients={crm.clients} onOpenTasks={() => navigate("Tasks")} />;
     if (activeView === "Sales") return <SalesPanel onOpenPipeline={() => navigate("Pipeline")} onAddLead={() => create("Pipeline")} />;
-    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} clientSection={clientSection} onClientSectionChange={setClientSection} />;
+    return <CrmPanel mode={activeView as "Pipeline" | "Clients" | "Tasks"} startCreate={createSignal} clientSection={clientSection} onClientSectionChange={(section) => navigate(section === "pipeline" ? "Pipeline" : "Clients")} />;
   })();
 
-  return <AdminShell activeView={activeView} collapsed={collapsed} mobileOpen={mobileOpen} connected={connected} loading={loading} onNavigate={navigate} onToggleCollapsed={() => setCollapsed((value) => !value)} onToggleMobile={() => setMobileOpen((value) => !value)}><div className="admin-main">{module}</div>{notice ? <div className="admin-toast" role="status"><span>!</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div> : null}</AdminShell>;
+  return <AdminShell activeView={activeView} collapsed={collapsed} mobileOpen={mobileOpen} connected={connected} loading={loading} onNavigate={navigate} onCreateTask={crm.permissions?.canEdit ? () => create("Tasks") : undefined} onToggleCollapsed={toggleCollapsed} onToggleMobile={toggleMobile}><div className="admin-main" id="admin-main" tabIndex={-1}>{module}</div>{notice ? <div className="admin-toast" role="status"><span>!</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notification"><Icon name="x" size={13} /></button></div> : null}</AdminShell>;
 }
