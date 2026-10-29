@@ -12,7 +12,7 @@ export default function UiReview() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const original = window.fetch;
-    const events: {id:string;leadId:string;kind:string;method:string|null;notes:string;meetingAt:string|null;occurred_at:string;voided?:boolean}[] = [];
+    const events: {id:string;leadId:string;kind:string;method:string|null;notes:string;meetingAt:string|null;occurred_at:string;voided?:boolean;sequenceStep?:number|null}[] = [{id:'sample-initial',leadId:leads[2].id,kind:'outreach',method:'email',notes:'Fictional initial outreach',meetingAt:null,occurred_at:new Date(Date.now()-8*86400000).toISOString()},{id:'sample-expired',leadId:leads[0].id,kind:'outreach',method:'call',notes:'Fictional expired sequence',meetingAt:null,occurred_at:new Date(Date.now()-15*86400000).toISOString()}];
     window.fetch = async (input, options) => {
       const path = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url, window.location.href).pathname;
       if (!path.startsWith("/api/admin/")) return original(input, options);
@@ -27,7 +27,8 @@ export default function UiReview() {
         const leadStats = leads.map(lead => {
           const history = active.filter(event => event.leadId === lead.id);
           const booking = history.find(event => event.kind === "meeting_booked");
-          return { leadId: lead.id, attempts: history.filter(event => event.kind === "outreach").length, meetingBooked: !!booking, bookingId: booking?.id || null, meetingAt: booking?.meetingAt || null, canUndoBooking: true, history: history.slice().reverse().slice(0,5).map(event => ({ id:event.id, event_type:event.kind, method:event.method, notes:event.notes, occurred_at:event.occurred_at, canUndo:true })) };
+          const first = history.filter(event => event.kind === 'outreach').sort((a,b)=>a.occurred_at.localeCompare(b.occurred_at))[0];
+          return { firstOutreachAt:first?.occurred_at || null, firstMethod:first?.method || null, sequenceSteps:history.flatMap(event=>event.sequenceStep?[event.sequenceStep]:[]), sequenceStatus:history.filter(event=>['response_received','sequence_stopped'].includes(event.kind)).at(-1)?.kind || null, leadId: lead.id, attempts: history.filter(event => event.kind === "outreach").length, meetingBooked: !!booking, bookingId: booking?.id || null, meetingAt: booking?.meetingAt || null, canUndoBooking: true, history: history.slice().reverse().slice(0,5).map(event => ({ id:event.id, event_type:event.kind, method:event.method, notes:event.notes, occurred_at:event.occurred_at, canUndo:true })) };
         });
         const outreaches = active.filter(event => event.kind === "outreach");
         return Response.json({ canEdit:true, leads, leadStats, totals:{ outreaches:outreaches.length, contactedLeads:new Set(outreaches.map(event=>event.leadId)).size, meetingsBooked:active.filter(event=>event.kind==="meeting_booked").length }, byMethod:Object.fromEntries(["call","email","whatsapp","linkedin","other"].map(method=>[method,outreaches.filter(event=>event.method===method).length])) });

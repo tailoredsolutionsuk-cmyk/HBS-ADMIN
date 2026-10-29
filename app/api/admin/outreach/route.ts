@@ -53,21 +53,23 @@ export async function POST(request: Request) {
     if (lead.error) return failure("OUTREACH_UNAVAILABLE", 503);
     if (!lead.data) return failure("LEAD_NOT_FOUND", 404);
     const db = portalService();
-    const row = { id: entry.id, lead_id: entry.leadId, event_type: entry.kind, method: entry.method, notes: entry.notes, meeting_at: entry.meetingAt, created_by: account.userId };
+    const row = { id: entry.id, lead_id: entry.leadId, event_type: entry.kind, method: entry.method, notes: entry.notes, meeting_at: entry.meetingAt, sequence_step: entry.sequenceStep, created_by: account.userId };
     const saved = await db.from("crm_outreach_events").insert(row).select("id").single();
     if (!saved.error) return NextResponse.json({ id: saved.data.id }, { status: 201, headers });
     if (saved.error.code === "23505") {
-      const existing = await db.from("crm_outreach_events").select("id,lead_id,event_type,method,notes,meeting_at,created_by").eq("id", entry.id).maybeSingle();
+      const existing = await db.from("crm_outreach_events").select("id,lead_id,event_type,method,notes,meeting_at,sequence_step,created_by").eq("id", entry.id).maybeSingle();
       if (existing.data) {
         const sameDate = (existing.data.meeting_at ? new Date(existing.data.meeting_at).toISOString() : null) === entry.meetingAt;
-        const same = existing.data.lead_id === entry.leadId && existing.data.event_type === entry.kind && existing.data.method === entry.method && existing.data.notes === entry.notes && existing.data.created_by === account.userId && sameDate;
+        const same = existing.data.lead_id === entry.leadId && existing.data.event_type === entry.kind && existing.data.method === entry.method && existing.data.notes === entry.notes && existing.data.sequence_step === entry.sequenceStep && existing.data.created_by === account.userId && sameDate;
         return same ? NextResponse.json({ id: existing.data.id, replayed: true }, { headers }) : failure("ENTRY_ID_CONFLICT", 409);
       }
+      if (entry.sequenceStep) return failure("FOLLOW_UP_ALREADY_LOGGED", 409);
       if (entry.kind === "meeting_booked") {
         const booked = await db.from("crm_outreach_events").select("id").eq("lead_id", entry.leadId).eq("event_type", "meeting_booked").is("voided_at", null).maybeSingle();
         if (booked.data) return NextResponse.json({ id: booked.data.id, alreadyBooked: true }, { headers });
       }
     }
+    if (saved.error.code === "P0001") return failure(saved.error.message === "SEQUENCE_CLOSED" ? "SEQUENCE_CLOSED" : "FOLLOW_UP_NOT_DUE", 409);
     return failure("OUTREACH_SAVE_FAILED", 503);
   } catch { return failure("OUTREACH_SAVE_FAILED", 503); }
 }
@@ -92,3 +94,4 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ undone: true }, { headers });
   } catch { return failure("OUTREACH_SAVE_FAILED", 503); }
 }
+
