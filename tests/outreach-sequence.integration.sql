@@ -18,6 +18,7 @@ begin
   snapshot := public.crm_outreach_dashboard(null);
   select value into stats from jsonb_array_elements(snapshot->'leadStats') where value->>'leadId'=lead::text;
   if stats->'sequenceSteps' <> '[1,3,7]'::jsonb then raise exception 'Sequence progress missing'; end if;
+  if (stats->>'finalFollowUpAt')::timestamptz <> now() then raise exception 'Final send time missing'; end if;
   insert into public.crm_outreach_events(id,lead_id,event_type) values(gen_random_uuid(),lead,'response_received');
   update public.crm_outreach_events set voided_at=now() where id=first_follow;
   begin
@@ -31,6 +32,7 @@ begin
     raise exception 'Follow-up after day 14 accepted';
   exception when raise_exception then if sqlerrm <> 'SEQUENCE_CLOSED' then raise; end if; end;
   update public.crm_outreach_events set occurred_at=now() where id=initial;
+  update public.crm_outreach_events set voided_at=now() where lead_id=lead and sequence_step=7;
   begin
     insert into public.crm_outreach_events(id,lead_id,event_type,method,sequence_step) values(gen_random_uuid(),lead,'outreach','email',1);
     raise exception 'Early follow-up accepted';

@@ -28,6 +28,12 @@ test("response, manual stop, a booked meeting and closed leads suppress follow-u
   assert.equal(followUpSequence({ ...record, meetingBooked: true }, "Contacted", day(3)).status, "stopped");
   for (const status of ["Won", "Lost"]) assert.equal(followUpSequence(record, status, day(3)).status, "stopped");
 });
+test("a late final follow-up still gets a full seven-day waiting period", () => {
+  const late = { ...record, sequenceSteps: [1,3,7], finalFollowUpAt: day(10).toISOString() };
+  assert.equal(followUpSequence(late, "Contacted", day(14)).status, "waiting");
+  assert.equal(followUpSequence(late, "Contacted", day(17)).status, "ended");
+  assert.equal(followUpSequence(late, "Contacted", day(14)).dueAt, day(17).toISOString());
+});
 test("follow-up metadata cannot masquerade as another activity or skip schedule steps", () => {
   const entry = { id: "ab4182c3-8768-42b5-bdba-572773329afb", leadId: record.leadId, kind: "outreach", method: "email", sequenceStep: 1 };
   assert.equal(parseOutreachEntry(entry)?.sequenceStep, 1);
