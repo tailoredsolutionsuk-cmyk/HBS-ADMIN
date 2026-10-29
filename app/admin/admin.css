@@ -27,6 +27,40 @@ button, input, select, textarea { font: inherit; }
 button { color: inherit; }
 
 .admin-shell { min-height: 100vh; display: flex; background: var(--hbs-canvas); color: var(--hbs-ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.admin-outreach-report-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.admin-outreach-periods { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px; border: 1px solid var(--hbs-border); border-radius: 12px; background: var(--hbs-paper); }
+.admin-outreach-periods button { min-height: 42px; padding: 9px 15px; border: 0; border-radius: 8px; background: transparent; color: var(--hbs-muted); cursor: pointer; font-size: 13px; font-weight: 650; }
+.admin-outreach-periods button[aria-pressed="true"] { background: var(--hbs-forest); color: white; }
+.admin-outreach-kpis { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.admin-outreach-kpis article { display: grid; align-content: start; gap: 10px; padding: 22px; border: 1px solid var(--hbs-border); border-radius: 14px; background: white; }
+.admin-outreach-kpis span { font-size: 13px; color: var(--hbs-muted); }
+.admin-outreach-kpis strong { color: var(--hbs-forest); font-size: 34px; line-height: 1; }
+.admin-outreach-kpis small { color: var(--hbs-muted); font-size: 12px; }
+.admin-outreach-method-totals { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px; }
+.admin-outreach-method-totals > div { display: flex; justify-content: space-between; gap: 8px; padding: 13px; border: 1px solid var(--hbs-border); border-radius: 10px; background: var(--hbs-paper); font-size: 13px; }
+.admin-outreach-method-totals strong { color: var(--hbs-forest); }
+.admin-outreach-log-filters { display: grid; grid-template-columns: minmax(200px,1fr) repeat(3,minmax(130px,.55fr)); gap: 10px; align-items: end; }
+.admin-outreach-log-filters > label:not(.admin-search), .admin-outreach-entry-form label { display: grid; gap: 6px; color: var(--hbs-muted); font-size: 12px; font-weight: 650; }
+.admin-outreach-log-filters select, .admin-outreach-entry-form input, .admin-outreach-entry-form textarea { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--hbs-border-strong); border-radius: 8px; padding: 10px; background: white; color: var(--hbs-ink); }
+.admin-outreach-tracking-list { display: grid; gap: 14px; }
+.admin-outreach-tracking-lead { padding: 20px; border: 1px solid var(--hbs-border); border-radius: 12px; background: var(--hbs-paper); }
+.admin-outreach-tracking-lead > header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.admin-outreach-tracking-lead h3 { margin: 0; color: var(--hbs-forest); font-size: 16px; overflow-wrap: anywhere; }
+.admin-outreach-tracking-lead header p, .admin-outreach-tracking-lead header div > span { margin: 5px 0; font-size: 13px; color: var(--hbs-muted); }
+.admin-outreach-log-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.admin-outreach-booked { min-height: 44px; padding: 10px 15px; border: 1px solid #9fbaa7; border-radius: 9px; background: #e5f2e8; color: #315b40; font-size: 13px; font-weight: 700; }
+.admin-outreach-entry-form { display: grid; gap: 12px; margin: 12px 0 16px; padding: 18px; border: 1px solid #b4c9b9; border-radius: 10px; background: #edf4ee; }
+.admin-outreach-entry-form h4 { margin: 0; font-size: 15px; color: var(--hbs-forest); }
+.admin-outreach-entry-form > div { display: flex; gap: 9px; flex-wrap: wrap; }
+.admin-outreach-entry-form > p { margin: 0; color: var(--hbs-warning); font-size: 13px; }
+.admin-outreach-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-outreach-history { display: grid; gap: 10px; margin: 12px 0; padding: 0; list-style: none; }
+.admin-outreach-history li { display: flex; justify-content: space-between; align-items: start; gap: 10px; padding: 12px; border-radius: 8px; background: white; }
+.admin-outreach-history strong, .admin-outreach-history time { display: block; font-size: 13px; }
+.admin-outreach-history time { margin-top: 3px; color: var(--hbs-muted); }
+.admin-outreach-history p { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 0; font-size: 13px; }
+@media (max-width: 1100px) { .admin-outreach-log-filters { grid-template-columns: 1fr 1fr; }.admin-outreach-log-filters .admin-search { grid-column: 1 / -1; }.admin-outreach-method-totals { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 600px) { .admin-outreach-kpis { grid-template-columns: 1fr; }.admin-outreach-method-totals, .admin-outreach-log-buttons { display: grid; grid-template-columns: 1fr 1fr; }.admin-outreach-log-buttons > button:last-child { grid-column: 1 / -1; }.admin-outreach-log-filters { grid-template-columns: 1fr; }.admin-outreach-tracking-lead { padding: 14px; }.admin-outreach-periods { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }.admin-outreach-kpis article { padding: 18px; } }
 .admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 50; width: 258px; display: flex; flex-direction: column; padding: 22px 16px 18px; overflow-y: auto; background: var(--hbs-paper); border-right: 1px solid var(--hbs-border); transition: width .2s ease, transform .2s ease; }
 .admin-content { width: calc(100% - 258px); min-width: 0; margin-left: 258px; transition: width .2s ease, margin-left .2s ease; }
 .admin-brand { min-height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 8px 13px; color: var(--hbs-ink); }
