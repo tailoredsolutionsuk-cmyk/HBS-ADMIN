@@ -1,3 +1,9 @@
+.admin-followup-sequence { margin: 16px 0; padding: 16px; border: 1px solid #dce4de; border-radius: 12px; background: #f2f6f2; }
+.admin-followup-sequence p { margin: 8px 0; line-height: 1.6; }
+.admin-followup-sequence summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+.admin-followup-sequence label,.admin-followup-filter { display: grid; gap: 8px; margin: 12px 0; }
+.admin-followup-sequence textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #b9c8bd; border-radius: 8px; font: inherit; resize: vertical; background: white; color: #243a31; }
+.admin-followup-sequence button { margin: 6px 8px 0 0; max-width: 100%; white-space: normal; }
 :root {
   --hbs-forest: #243a31;
   --hbs-deep: #182a23;
@@ -566,3 +572,4 @@ button { color: inherit; }
 @media (max-width: 1100px) { .admin-task-toolbar { grid-template-columns: 1fr 1fr; }.admin-task-toolbar .admin-search { grid-column: 1 / -1; }.admin-task-toolbar label, .admin-task-toolbar select { min-width: 0; }.admin-task-toolbar select { width: 100%; } }
 @media (max-width: 820px) { .admin-mobile-close { display: grid; place-items: center; width: 44px; height: 44px; margin-left: auto; border: 0; border-radius: 8px; background: var(--hbs-sage); color: var(--hbs-forest); cursor: pointer; }.admin-page-description { display: none; }.admin-topbar { min-height: 76px; padding: 12px 14px; gap: 10px; }.admin-topbar h1 { font-size: 18px; overflow-wrap: anywhere; }.admin-topbar-actions { gap: 7px; }.admin-topbar-actions .admin-account-mark { display: none; }.admin-topbar-actions .admin-outline-button { padding: 9px 10px; }.admin-topbar-actions a { min-width: 44px; }.admin-topbar-title { gap: 6px; }.admin-mobile-menu { flex-shrink: 0; }.sidebar-collapsed .admin-nav-search { display: flex; }.admin-shell input:not([type="checkbox"]), .admin-shell select, .admin-shell textarea { font-size: 16px; } }
 @media (max-width: 600px) { .admin-task-toolbar, .admin-outreach-toolbar { grid-template-columns: 1fr; }.admin-task-actions { grid-column: 1 / -1; }.admin-task-actions select { flex: 1; max-width: none; }.admin-outreach-row { grid-template-columns: minmax(0,1fr) auto; padding: 16px; }.admin-outreach-row .admin-outreach-follow-up { grid-column: 1 / -1; grid-row: 2; }.admin-outreach-row .admin-spreadsheet-stage { grid-column: 2; grid-row: 1; }.admin-main { padding-top: 22px; }.admin-welcome h2 { font-size: 28px; }.admin-welcome > .admin-outline-button { width: 100%; }.admin-panel-heading { flex-wrap: wrap; }.admin-spreadsheet-stats article { min-height: 82px; }.admin-topbar-actions .admin-global-task { font-size: 12px; } }
+
