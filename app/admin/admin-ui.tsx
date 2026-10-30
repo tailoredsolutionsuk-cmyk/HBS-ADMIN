@@ -1,8 +1,9 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { adminViewHelp, type AdminView } from "../../lib/crm/admin-navigation";
+export type { AdminView } from "../../lib/crm/admin-navigation";
 
-export type AdminView = "Overview" | "Websites" | "Pipeline" | "Lead Finder" | "Outreach & Follow-up" | "Clients" | "Sales" | "Tasks" | "Calendar" | "Metrics" | "JARVIS CEO" | "Integrations";
 export type IconName = "activity" | "arrow-up-right" | "briefcase" | "calendar" | "chart" | "chevron-down" | "chevron-left" | "external" | "globe" | "grid" | "layers" | "link" | "menu" | "plus" | "search" | "settings" | "sparkles" | "users" | "x";
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
@@ -32,9 +33,10 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 }
 
 const navigation: { label: string; items: { label: AdminView; icon: IconName }[] }[] = [
-  { label: "Workspace", items: [{ label: "Overview", icon: "grid" }, { label: "Websites", icon: "globe" }] },
-  { label: "CRM", items: [{ label: "Lead Finder", icon: "search" }, { label: "Outreach & Follow-up", icon: "activity" }, { label: "Clients", icon: "users" }, { label: "Sales", icon: "briefcase" }, { label: "Tasks", icon: "layers" }, { label: "Calendar", icon: "calendar" }, { label: "Metrics", icon: "chart" }] },
-  { label: "Tools", items: [{ label: "JARVIS CEO", icon: "sparkles" }, { label: "Integrations", icon: "link" }] },
+  { label: "Your day", items: [{ label: "Overview", icon: "grid" }, { label: "Tasks", icon: "layers" }, { label: "Calendar", icon: "calendar" }] },
+  { label: "Grow your business", items: [{ label: "Outreach & Follow-up", icon: "activity" }, { label: "Lead Finder", icon: "search" }, { label: "Sales", icon: "briefcase" }, { label: "Metrics", icon: "chart" }] },
+  { label: "Client delivery", items: [{ label: "Clients", icon: "users" }, { label: "Websites", icon: "globe" }] },
+  { label: "Tools & settings", items: [{ label: "JARVIS CEO", icon: "sparkles" }, { label: "Integrations", icon: "link" }] },
 ];
 
 type ShellProps = {
@@ -43,38 +45,72 @@ type ShellProps = {
   mobileOpen: boolean;
   connected: boolean;
   loading: boolean;
-  onNavigate: (view: AdminView) => void;
+  onNavigate: (view: AdminView) => boolean | void;
+  onCreateTask?: () => void;
   onToggleCollapsed: () => void;
   onToggleMobile: () => void;
   children: ReactNode;
 };
 
-export function AdminShell({ activeView, collapsed, mobileOpen, connected, loading, onNavigate, onToggleCollapsed, onToggleMobile, children }: ShellProps) {
+export function AdminShell({ activeView, collapsed, mobileOpen, connected, loading, onNavigate, onCreateTask, onToggleCollapsed, onToggleMobile, children }: ShellProps) {
+  const [navQuery, setNavQuery] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const mobileCloseRef = useRef<HTMLButtonElement>(null);
+  const term = navQuery.trim().toLowerCase();
+  const groups = navigation.map((group) => ({ ...group, items: group.items.filter((item) => !term || `${item.label} ${adminViewHelp[item.label]}`.toLowerCase().includes(term)) })).filter((group) => group.items.length);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 820px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   useEffect(() => {
     if (!mobileOpen) return;
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") onToggleMobile(); };
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    mobileCloseRef.current?.focus();
+    const desktop = window.matchMedia("(min-width: 821px)");
+    const onResize = (event: MediaQueryListEvent) => { if (event.matches) onToggleMobile(); };
+    desktop.addEventListener("change", onResize);
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); onToggleMobile(); }
+      if (event.key === "Tab") {
+        const elements = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input, a[href]') || []).filter((element) => element.getClientRects().length);
+        const first = elements[0], last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
     window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
+    return () => { document.body.style.overflow = overflow; window.removeEventListener("keydown", close); desktop.removeEventListener("change", onResize); previous?.focus(); };
   }, [mobileOpen, onToggleMobile]);
 
-  const navigate = (view: AdminView) => { onNavigate(view); if (mobileOpen) onToggleMobile(); };
+  const navigate = (view: AdminView) => {
+    if (onNavigate(view) !== false) { setNavQuery(""); if (mobileOpen) onToggleMobile(); }
+  };
   return <main className={`admin-shell ${collapsed ? "sidebar-collapsed" : ""} ${mobileOpen ? "mobile-nav-open" : ""}`}>
-    {mobileOpen ? <button className="admin-mobile-backdrop" aria-label="Close navigation" onClick={onToggleMobile} /> : null}
-    <aside className="admin-sidebar" aria-label="Harley’s workspace navigation">
-      <div className="admin-brand"><span className="admin-brand-mark">H</span><span className="admin-brand-copy">HBS <small>ADMIN</small></span><button className="admin-collapse-button" onClick={onToggleCollapsed} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="chevron-left" size={16} /></button></div>
-      <button className="admin-workspace-select" aria-label="Harley’s workspace"><span className="admin-workspace-avatar">H</span><span className="admin-workspace-copy"><strong>Harley&apos;s workspace</strong><small>Business operations</small></span><Icon name="chevron-down" size={14} /></button>
-      <nav className="admin-nav">
-        {navigation.map((group) => <div className="admin-nav-group" key={group.label}><div className="admin-nav-label">{group.label}</div>{group.items.map((item) => <button key={item.label} title={collapsed ? item.label : undefined} className={`admin-nav-item ${activeView === item.label ? "active" : ""}`} aria-current={activeView === item.label ? "page" : undefined} onClick={() => navigate(item.label)}><Icon name={item.icon} /><span>{item.label}</span></button>)}</div>)}
+    <a className="admin-skip-link" href="#admin-main">Skip to workspace content</a>
+    {mobileOpen ? <button className="admin-mobile-backdrop" tabIndex={-1} aria-label="Close navigation" onClick={onToggleMobile} /> : null}
+    <aside ref={sidebarRef} className="admin-sidebar" inert={isMobile && !mobileOpen} aria-hidden={isMobile && !mobileOpen ? true : undefined} role={mobileOpen ? "dialog" : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Harley’s workspace navigation">
+      <div className="admin-brand"><span className="admin-brand-mark">H</span><span className="admin-brand-copy">HBS <small>ADMIN</small></span><button className="admin-collapse-button" onClick={() => { setNavQuery(""); onToggleCollapsed(); }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed}><Icon name="chevron-left" size={16} /></button><button ref={mobileCloseRef} className="admin-mobile-close" onClick={onToggleMobile} aria-label="Close navigation"><Icon name="x" /></button></div>
+      <div className="admin-workspace-select"><span className="admin-workspace-avatar">H</span><span className="admin-workspace-copy"><strong>Harley&apos;s workspace</strong><small>Owner · Super admin</small></span></div>
+      <label className="admin-nav-search"><Icon name="search" size={16} /><input ref={searchRef} value={navQuery} onChange={(event) => setNavQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape" && navQuery) { event.stopPropagation(); setNavQuery(""); } }} placeholder="Find a section…" aria-label="Find a CRM section" /></label>
+      <nav className="admin-nav" aria-label="Main sections">
+        {groups.map((group) => <div className="admin-nav-group" key={group.label}><div className="admin-nav-label">{group.label}</div>{group.items.map((item) => <button key={item.label} title={collapsed ? item.label : adminViewHelp[item.label]} aria-label={item.label} className={`admin-nav-item ${activeView === item.label ? "active" : ""}`} aria-current={activeView === item.label ? "page" : undefined} onClick={() => navigate(item.label)}><Icon name={item.icon} /><span>{item.label}</span></button>)}</div>)}
+        {!groups.length ? <p className="admin-nav-empty" role="status">No sections found.<button type="button" onClick={() => { setNavQuery(""); searchRef.current?.focus(); }}>Clear search</button></p> : null}
       </nav>
-      <div className="admin-sidebar-bottom">
-        <button className="admin-nav-item" title={collapsed ? "Settings" : undefined}><Icon name="settings" /><span>Settings</span></button>
-        <div className="admin-profile"><span className="admin-profile-avatar">H</span><span className="admin-profile-copy"><strong>Harley</strong><small>Owner · Super admin</small></span><span className="admin-online-dot" title="Online" /></div>
-      </div>
+      <div className="admin-sidebar-bottom"><div className="admin-profile"><span className="admin-profile-avatar">H</span><span className="admin-profile-copy"><strong>Harley</strong><small>Owner · Super admin</small></span><span className="admin-online-dot" title="Online" /></div></div>
     </aside>
-    <section className="admin-content">
+    <section className="admin-content" inert={mobileOpen}>
       <header className="admin-topbar">
-        <div className="admin-topbar-title"><button className="admin-mobile-menu" onClick={onToggleMobile} aria-label="Open navigation" aria-expanded={mobileOpen}><Icon name="menu" /></button><div><span className="admin-eyebrow">Harley&apos;s workspace / {activeView}</span><h1>{activeView}</h1></div></div>
-        <div className="admin-topbar-actions"><span className={`admin-saved ${connected ? "connected" : ""}`}><i />{connected ? "Live data connected" : loading ? "Connecting securely…" : "Connection needs attention"}</span><a className="admin-outline-button" href="/portal" target="_blank" rel="noreferrer"><Icon name="external" size={14} /><span>Client portal</span></a><button className="admin-avatar-button" aria-label="Harley account">H</button></div>
+        <div className="admin-topbar-title"><button className="admin-mobile-menu" onClick={onToggleMobile} aria-label="Open navigation" aria-expanded={mobileOpen}><Icon name="menu" /></button><div><h1>{activeView}</h1><p className="admin-page-description">{adminViewHelp[activeView]}</p></div></div>
+        <div className="admin-topbar-actions"><span className={`admin-saved ${connected ? "connected" : ""}`}><i />{connected ? "Live data" : loading ? "Connecting…" : "Check connection"}</span>{onCreateTask ? <button className="admin-outline-button admin-global-task" type="button" onClick={onCreateTask}><Icon name="plus" size={16} />New task</button> : null}<a className="admin-outline-button" href="/portal" target="_blank" rel="noreferrer" aria-label="Open client portal in a new tab"><Icon name="external" size={14} /><span>Client portal</span></a><span className="admin-account-mark" title="Harley · Owner">H</span></div>
       </header>
       {children}
     </section>
