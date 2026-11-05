@@ -56,7 +56,10 @@ export function OutreachLeadDrawer({ lead, children, onClose, disabled, returnFo
     if (event.target === event.currentTarget && event.clientX < bounds.left && !disabled) onClose();
   }} onKeyDown={event => {
     if (event.key !== "Tab") return;
-    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary")).filter(control => control.getClientRects().length > 0);
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary")).filter(control => {
+      const collapsed = control.closest("details:not([open])");
+      return control.getClientRects().length > 0 && (!collapsed || (control.tagName === "SUMMARY" && control.parentElement === collapsed));
+    });
     const first = controls[0], last = controls.at(-1);
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
     if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
